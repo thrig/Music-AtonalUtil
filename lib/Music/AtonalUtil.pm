@@ -18,8 +18,13 @@ sub new {
   my ( $class, $self, %param ) = @_;
   $self //= {};
 
-  $self->{_DEG_IN_SCALE} = $param{DEG_IN_SCALE} // $DEG_IN_SCALE;
-  $self->{_packing}      = $param{PACKING}      // 'right';
+  $self->{_DEG_IN_SCALE} = int( $param{DEG_IN_SCALE} // $DEG_IN_SCALE );
+  if ( $self->{_DEG_IN_SCALE} < 2 ) {
+    croak("degrees in scale must be greater than one");
+  }
+
+  # XXX packing not implemented beyond "right" method (via www.mta.ca docs)
+  $self->{_packing} = $param{PACKING} // 'right';
 
   bless $self, $class;
   return $self;
@@ -68,7 +73,7 @@ sub interval_class_content {
   for my $i ( 1 .. $#$pset ) {
     for my $j ( 0 .. $i - 1 ) {
       $icc{
-        pitch2intervalclass(
+        $self->pitch2intervalclass(
           ( $pset->[$i] - $pset->[$j] ) % $self->{_DEG_IN_SCALE}
         )
         }++;
@@ -93,7 +98,7 @@ sub invariance_matrix {
   my @ivm;
   for my $i ( 0 .. $#$pset ) {
     for my $j ( 0 .. $#$pset ) {
-      $ivm[$i][$j] = $pset->[$i] + $pset->[$j];
+      $ivm[$i][$j] = ( $pset->[$i] + $pset->[$j] ) % $self->{_DEG_IN_SCALE};
     }
   }
 
@@ -137,7 +142,7 @@ sub normal_form {
   if ( @$pset == 1 ) {
     @normal = @$pset;
   } else {
-    my $equivs = circular_permute($pset);
+    my $equivs = $self->circular_permute($pset);
 
     my @order = 1 .. $#$pset;
     if ( $self->{_packing} eq 'right' ) {
@@ -211,11 +216,12 @@ sub prime_form {
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
-  my @forms = normal_form($pset);
-  push @forms, normal_form( invert( $forms[0] ) );
+  my @forms = $self->normal_form($pset);
+  push @forms, $self->normal_form( $self->invert( $forms[0] ) );
 
   for my $s (@forms) {
-    $s = transpose( $s, $self->{_DEG_IN_SCALE} - $s->[0] ) if $s->[0] != 0;
+    $s = $self->transpose( $s, $self->{_DEG_IN_SCALE} - $s->[0] )
+      if $s->[0] != 0;
   }
 
   my @prime;
@@ -247,11 +253,14 @@ sub prime_form {
   return \@prime;
 }
 
-# Adjusts pitch set members by the specified integer amount. Atonal
-# theory typically only transposes up (so 1 up to 12 and then modulus
-# instead of 1 down to 0 and then modulus), but this routine offers
-# negative transpositions, if desired. Returns array reference
-# containing the transposed pitch set.
+sub scale_degrees {
+  my ( $self, $dis ) = @_;
+  $self->{_DEG_IN_SCALE} = int($dis) if $dis and $dis > 1;
+  return $self->{_DEG_IN_SCALE};
+}
+
+# Adjusts pitch set members by the specified integer amount. Returns
+# array reference containing the transposed pitch set.
 sub transpose {
   my ( $self, $pset, $t ) = @_;
   croak "transpose value must be integer\n"
@@ -285,7 +294,7 @@ sub variances {
   for my $p ( @$pset1, @$pset2 ) {
     $count{$p}++;
   }
-  for my $p ( keys %count ) {
+  for my $p ( sort { $a <=> $b } keys %count ) {
     push @union, $p;
     push @{ $count{$p} > 1 ? \@intersection : \@difference }, $p;
   }
@@ -306,7 +315,7 @@ sub zrelation {
 
   my @ic_vecs;
   for my $ps ( $pset1, $pset2 ) {
-    push @ic_vecs, scalar interval_class_content($ps);
+    push @ic_vecs, scalar $self->interval_class_content($ps);
   }
   return ( "@{$ic_vecs[0]}" eq "@{$ic_vecs[1]}" ) ? 1 : 0;
 }
@@ -321,16 +330,14 @@ Music::AtonalUtil - Perl extension for atonal music analysis and composition
 =head1 SYNOPSIS
 
   use Music::AtonalUtil;
-  blah blah blah
+  TODO
 
 =head1 DESCRIPTION
 
 This module contains a variety of routines suitable for atonal music
 composition and analysis.
 
-=head2 EXPORT
-
-None by default.
+TODO
 
 =head1 SEE ALSO
 
