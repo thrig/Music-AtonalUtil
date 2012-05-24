@@ -6,28 +6,35 @@ use warnings;
 
 use Carp qw/croak/;
 
-require Exporter;
-our @ISA = qw(Exporter);
-
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my $DEG_IN_SCALE = 12;
 
 ########################################################################
 #
-# Methods
+# SUBROUTINES
+
+sub new {
+  my ( $class, $self, %param ) = @_;
+  $self //= {};
+
+  $self->{_DEG_IN_SCALE} = $param{DEG_IN_SCALE} // $DEG_IN_SCALE;
+  $self->{_packing}      = $param{PACKING}      // 'right';
+
+  bless $self, $class;
+  return $self;
+}
+
+########################################################################
+#
+# Methods of Music
 
 # Circular permutation, same as taking inversions in tonal harmony.
 # 'invert' is a different operation.
 sub circular_permute {
-  my ($pset) = @_;
+  my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
 
   my @perms;
   for my $i ( 0 .. $#$pset ) {
@@ -41,32 +48,35 @@ sub circular_permute {
 # Given a pitch set, returns the complement of that set as an array
 # reference.
 sub complement {
-  my ($pset) = @_;
+  my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
 
   my %seen;
   @seen{@$pset} = ();
-  return [ grep { !exists $seen{$_} } 0 .. $DEG_IN_SCALE - 1 ];
+  return [ grep { !exists $seen{$_} } 0 .. $self->{_DEG_IN_SCALE} - 1 ];
 }
 
 # Given a pitch set as an array reference containing at least two
 # elements, returns an array reference (and in list context also a hash
 # reference) representing the same interval-class vector information.
 sub interval_class_content {
-  my ($pset) = @_;
+  my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain at least two elements\n" if @$pset < 2;
 
   my %icc;
   for my $i ( 1 .. $#$pset ) {
     for my $j ( 0 .. $i - 1 ) {
-      $icc{ pitch2intervalclass(
-          ( $pset->[$i] - $pset->[$j] ) % $DEG_IN_SCALE ) }++;
+      $icc{
+        pitch2intervalclass(
+          ( $pset->[$i] - $pset->[$j] ) % $self->{_DEG_IN_SCALE}
+        )
+        }++;
     }
   }
 
   my @icv;
-  for my $ics ( 1 .. int( $DEG_IN_SCALE / 2 ) ) {
+  for my $ics ( 1 .. int( $self->{_DEG_IN_SCALE} / 2 ) ) {
     push @icv, $icc{$ics} || 0;
   }
 
@@ -76,7 +86,7 @@ sub interval_class_content {
 # Given a pitch set, returns reference to an array of references that
 # comprise the invarience under Transpose(N)-Inversion of the pitch set.
 sub invariance_matrix {
-  my ($pset) = @_;
+  my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
@@ -94,14 +104,14 @@ sub invariance_matrix {
 # inversion (use circular permutation for that). Returns array ref of
 # inverse pitch set.
 sub invert {
-  my ( $pset, $axis ) = @_;
+  my ( $self, $pset, $axis ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
   $axis //= 0;
 
   my @inverse = @$pset;
   for my $p (@inverse) {
-    $p = ( $axis - $p ) % $DEG_IN_SCALE;
+    $p = ( $axis - $p ) % $self->{_DEG_IN_SCALE};
   }
 
   return \@inverse;
@@ -115,17 +125,11 @@ sub invert {
 # better, either via a packing=>value hash(ref) or as part of an OO
 # constructor.
 sub normal_form {
-  my ( $pset, $pack_method ) = @_;
-  $pack_method //= 'right';
+  my ( $self, $pset ) = @_;
 
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
-  # Modulate down to degrees in scale system, unique, ascending numeric order.
-  for my $pitch (@$pset) {
-    croak "pitch set must only contain integers" if $pitch !~ m/^-?\d+$/;
-    $pitch %= $DEG_IN_SCALE;
-  }
   my %seen;
   @$pset = sort { $a <=> $b } grep { !$seen{$_}++ } @$pset;
 
@@ -136,9 +140,9 @@ sub normal_form {
     my $equivs = circular_permute($pset);
 
     my @order = 1 .. $#$pset;
-    if ( $pack_method eq 'right' ) {
+    if ( $self->{_packing} eq 'right' ) {
       @order = reverse @order;
-    } elsif ( $pack_method eq 'left' ) {
+    } elsif ( $self->{_packing} eq 'left' ) {
       # XXX not sure about this, www.mta.ca instructions not totally
       # clear on the Forte method, and the 7-z18 (0234589) form
       # listed there reduces to (0123589). So, blow up until can
@@ -150,12 +154,13 @@ sub normal_form {
     }
 
     for my $i (@order) {
-      my $min_span = $DEG_IN_SCALE;
+      my $min_span = $self->{_DEG_IN_SCALE};
       my @min_span_idx;
 
       for my $eidx ( 0 .. $#$equivs ) {
         my $span =
-          ( $equivs->[$eidx][$i] - $equivs->[$eidx][0] ) % $DEG_IN_SCALE;
+          ( $equivs->[$eidx][$i] - $equivs->[$eidx][0] )
+          % $self->{_DEG_IN_SCALE};
         if ( $span < $min_span ) {
           $min_span     = $span;
           @min_span_idx = $eidx;
@@ -186,8 +191,10 @@ sub normal_form {
 # the circle of pitches folded in half along the zero to halfway point
 # for the degrees in the system, assumes equal temperament, etc.
 sub pitch2intervalclass {
-  my ($pitch) = @_;
-  return $pitch > int( $DEG_IN_SCALE / 2 ) ? $DEG_IN_SCALE - $pitch : $pitch;
+  my ( $self, $pitch ) = @_;
+  return $pitch > int( $self->{_DEG_IN_SCALE} / 2 )
+    ? $self->{_DEG_IN_SCALE} - $pitch
+    : $pitch;
 }
 
 # Given a pitch set (array ref of integers), returns array reference
@@ -199,17 +206,16 @@ sub pitch2intervalclass {
 # they will not be supported until someone provides patches or I need to
 # learn more about them.
 sub prime_form {
-  my ( $pset, $pack_method ) = @_;
-  $pack_method //= 'right';
+  my ( $self, $pset ) = @_;
 
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
-  my @forms = normal_form( $pset, $pack_method );
-  push @forms, normal_form( invert( $forms[0] ), $pack_method );
+  my @forms = normal_form($pset);
+  push @forms, normal_form( invert( $forms[0] ) );
 
   for my $s (@forms) {
-    $s = transpose( $s, $DEG_IN_SCALE - $s->[0] ) if $s->[0] != 0;
+    $s = transpose( $s, $self->{_DEG_IN_SCALE} - $s->[0] ) if $s->[0] != 0;
   }
 
   my @prime;
@@ -247,7 +253,7 @@ sub prime_form {
 # negative transpositions, if desired. Returns array reference
 # containing the transposed pitch set.
 sub transpose {
-  my ( $pset, $t ) = @_;
+  my ( $self, $pset, $t ) = @_;
   croak "transpose value must be integer\n"
     if !defined $t
       or $t !~ /^-?\d+$/;
@@ -257,7 +263,7 @@ sub transpose {
   my @tset = @$pset;
 
   for my $p (@tset) {
-    $p = ( $p + $t ) % $DEG_IN_SCALE;
+    $p = ( $p + $t ) % $self->{_DEG_IN_SCALE};
   }
   return \@tset;
 }
@@ -268,7 +274,7 @@ sub transpose {
 # intersection of the two sets; in list context, returns array ref of
 # the intersection, difference, and union of the sets.
 sub variances {
-  my ( $pset1, $pset2 ) = @_;
+  my ( $self, $pset1, $pset2 ) = @_;
 
   croak "pitch set must be array ref\n" unless ref $pset1 eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset1;
@@ -291,11 +297,16 @@ sub variances {
 # on whether those pitch sets are Z-related or not (that is, share the
 # same interval-class vector).
 sub zrelation {
+  my ( $self, $pset1, $pset2 ) = @_;
+
+  croak "pitch set must be array ref\n" unless ref $pset1 eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset1;
+  croak "pitch set must be array ref\n" unless ref $pset2 eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset2;
+
   my @ic_vecs;
-  for my $i ( 0 .. 1 ) {
-    croak "pitch set must be array ref\n" unless ref $_[$i] eq 'ARRAY';
-    croak "pitch set must contain something\n" if !@{ $_[$i] };
-    push @ic_vecs, scalar interval_class_content( $_[$i] );
+  for my $ps ( $pset1, $pset2 ) {
+    push @ic_vecs, scalar interval_class_content($ps);
   }
   return ( "@{$ic_vecs[0]}" eq "@{$ic_vecs[1]}" ) ? 1 : 0;
 }
