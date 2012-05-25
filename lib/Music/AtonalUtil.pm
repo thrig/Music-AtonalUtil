@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 my $DEG_IN_SCALE = 12;
 
@@ -34,8 +34,6 @@ sub new {
 #
 # Methods of Music
 
-# Circular permutation, same as taking inversions in tonal harmony.
-# 'invert' is a different operation.
 sub circular_permute {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -50,8 +48,6 @@ sub circular_permute {
   return \@perms;
 }
 
-# Given a pitch set, returns the complement of that set as an array
-# reference.
 sub complement {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -61,9 +57,6 @@ sub complement {
   return [ grep { !exists $seen{$_} } 0 .. $self->{_DEG_IN_SCALE} - 1 ];
 }
 
-# Given a pitch set as an array reference containing at least two
-# elements, returns an array reference (and in list context also a hash
-# reference) representing the same interval-class vector information.
 sub interval_class_content {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -88,8 +81,6 @@ sub interval_class_content {
   return wantarray ? ( \@icv, \%icc ) : \@icv;
 }
 
-# Given a pitch set, returns reference to an array of references that
-# comprise the invarience under Transpose(N)-Inversion of the pitch set.
 sub invariance_matrix {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -105,9 +96,6 @@ sub invariance_matrix {
   return \@ivm;
 }
 
-# Invert pitch set about axis (0 by default). Differs from tonal
-# inversion (use circular permutation for that). Returns array ref of
-# inverse pitch set.
 sub invert {
   my ( $self, $pset, $axis ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -122,13 +110,6 @@ sub invert {
   return \@inverse;
 }
 
-# Given a pitch set (array ref of integergs), returns the normal form of
-# that pitch set as an array ref. A second optional argument specifies
-# whether to pack the pitch set "to the left" (Allen Forte, The
-# Structure of Atonal Music) or "from the right" (various other authors;
-# specify the word 'right' for this method). This needs to be handled
-# better, either via a packing=>value hash(ref) or as part of an OO
-# constructor.
 sub normal_form {
   my ( $self, $pset ) = @_;
 
@@ -192,9 +173,6 @@ sub normal_form {
   return \@normal;
 }
 
-# Given an pitch, returns interval class that pitch belongs to. This is
-# the circle of pitches folded in half along the zero to halfway point
-# for the degrees in the system, assumes equal temperament, etc.
 sub pitch2intervalclass {
   my ( $self, $pitch ) = @_;
   return $pitch > int( $self->{_DEG_IN_SCALE} / 2 )
@@ -202,10 +180,6 @@ sub pitch2intervalclass {
     : $pitch;
 }
 
-# Given a pitch set (array ref of integers), returns array reference
-# containing the prime form of the pitch set. A second argument
-# specifies the packing method (see normal_form docs).
-#
 # Forte has names for prime forms (3-1 and suchlike) though these do not
 # appear to have any easily automated prime form to name algorithm, so
 # they will not be supported until someone provides patches or I need to
@@ -259,8 +233,6 @@ sub scale_degrees {
   return $self->{_DEG_IN_SCALE};
 }
 
-# Adjusts pitch set members by the specified integer amount. Returns
-# array reference containing the transposed pitch set.
 sub transpose {
   my ( $self, $pset, $t ) = @_;
   croak "transpose value must be integer\n"
@@ -277,11 +249,6 @@ sub transpose {
   return \@tset;
 }
 
-# Routine to show variance between two pitch sets (typically a starting
-# set and the the "transposition" or "inversion and transposition" of
-# that first set). In scalar context, returns array ref of the
-# intersection of the two sets; in list context, returns array ref of
-# the intersection, difference, and union of the sets.
 sub variances {
   my ( $self, $pset1, $pset2 ) = @_;
 
@@ -302,9 +269,6 @@ sub variances {
     wantarray ? ( \@intersection, \@difference, \@union ) : \@intersection;
 }
 
-# Given two pitch set array references, returns true or false depending
-# on whether those pitch sets are Z-related or not (that is, share the
-# same interval-class vector).
 sub zrelation {
   my ( $self, $pset1, $pset2 ) = @_;
 
@@ -330,18 +294,140 @@ Music::AtonalUtil - Perl extension for atonal music analysis and composition
 =head1 SYNOPSIS
 
   use Music::AtonalUtil;
-  TODO
+  my $atu = Music::AtonalUtil->new;
+
+Then see below for methods.
 
 =head1 DESCRIPTION
 
 This module contains a variety of routines suitable for atonal music
-composition and analysis.
+composition and analysis. L<"SEE ALSO"> has links to documentation on
+atonal analysis.
 
-TODO
+=head1 METHODS
+
+By default, a 12-tone system is assumed. Input values are not checked
+whether they reside inside this space. Most methods accept a pitch set
+(an array reference consisting of a list of pitch numbers), and most
+return new array references containing the results of the operation.
+Some basic sanity checking is done on the input, which may cause the
+code to B<croak> if something is awry. Elements of the pitch sets are
+not checked whether they reside inside the 12-tone basis (pitch numbers
+0 through 11), so input data may need to be first reduced as follows:
+
+  my $atu = Music::AtonalUtil->new;
+
+  my $pitch_set = [25,18,42,5];
+  for my $p (@$pitch_set) { $p %= $atu->scale_degrees }
+
+  say "Result: @$pitch_set";      # Result: 1 6 6 5
+
+Results from the various methods should reside within the 12-tone basis.
+
+=over 4
+
+=item B<new> I<parameter pairs ...>
+
+Constructor. The degrees in the scale can be adjusted via:
+
+  Music::AtonalUtil->new(DEG_IN_SCALE => 17);
+
+or some other positive integer greater than one, to use a non-12-tone
+basis for subsequent method calls. This value can be set or inspected
+via the B<scale_degrees> call.
+
+=item B<circular_permute> I<pitch set>
+
+Takes a pitch set, returns an array reference of pitch set references:
+
+  $atu->circular_permute([1,2,3]);   # [[1,2,3],[2,3,1],[3,1,2]]
+
+This is used by the B<normal_form> method, internally. This permutation
+is identical to inversions in tonal theory, but different from the
+B<invert> method offered by this module.
+
+=item B<complement> I<pitch set>
+
+Returns the pitches of the scale degrees not set in the passed
+pitch set.
+
+  $atu->complement([1,2,3]);    # [0,4,5,6,7,8,9,10,11]
+
+=item B<interval_class_content> I<pitch set>
+
+Given a pitch set with at least two elements, returns an array reference
+(and in list context also a hash reference) representing the interval-
+class vector information. Pitch sets with similar ic content tend to
+sound the same (see also B<zrelation>).
+
+=item B<invariance_matrix> I<pitch set>
+
+Returns reference to an array of references that comprise the invarience
+under Transpose(N)Inversion operations on the given pitch set. (With
+code, probably easier to iterate through all the T and T(N)I operations
+than learn how to read this table.)
+
+=item B<invert> I<pitch set> I<optional axis>
+
+Inverts the given pitch set, by default around the 0 axis, within the
+degrees in scale. Returns resulting pitch set as an array reference.
+
+=item B<normal_form> I<pitch set>
+
+Returns the normal form of the passed pitch set, via a "packed from the
+right" method outlined in the www.mta.ca link, below, so may return
+different normal forms than the Allen Forte method. There is stub code
+for the Allen Forte method in this module, though I lack enough
+information to verify if that code is correct.
+
+=item B<pitch2intervalclass> I<pitch>
+
+Returns the interval class a given pitch belongs to (0 is 0, 11 maps
+down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
+system). Used internally by the B<interval_class_content> method.
+
+=item B<prime_form> I<pitch set>
+
+Returns the prime form of a given pitch set (via B<normal_form> and
+various other operations on the passed pitch set).
+
+=item B<scale_degrees> I<optional integer>
+
+Without arguments, returns the number of scale degrees (12 by default).
+If passed a positive integer greater than two, sets the scale degrees to
+that. Note that changing this will change the results from almost all
+the methods this module offers, and would only be used for calculations
+involving a subset of the Western 12 tone system, or some exotic scale
+with more than 12 tones.
+
+=item B<transpose> I<pitch set> I<integer>
+
+Transposes the given pitch set by the given integer value, returns that
+result as an array reference.
+
+=item B<variances> I<pitch set1> I<pitch set2>
+
+Given two pitch sets, in scalar context returns the shared notes of
+those two pitch sets as an array reference. In list context, returns the
+shared notes (intersection), difference, and union all as array
+references.
+
+=item B<zrelation> I<pitch set1> I<pitch set2>
+
+Given two pitch sets, returns true if the two sets share the same
+B<interval_class_content>, false if not.
+
+=back
 
 =head1 SEE ALSO
 
 =over 4
+
+=item *
+
+The perlreftut, perldsc, and perllol perldocs to learn more about perl
+references, as the pitch sets utilize array references and arrays of
+array references.
 
 =item *
 
