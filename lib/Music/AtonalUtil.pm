@@ -437,6 +437,10 @@ http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/
 
 Musimathics, Vol. 1, p.311-317
 
+=item *
+
+L<Music::Chord::Positions> for a more tonal module.
+
 =back
 
 =head1 AUTHOR
