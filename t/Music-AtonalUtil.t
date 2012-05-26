@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 26;
+use Test::More tests => 32;
 
 ########################################################################
 #
@@ -73,6 +73,34 @@ is_deeply(
   'prime form'
 );
 
+is_deeply( $atu->retrograde( [ 1, 2, 3 ] ), [ 3, 2, 1 ], 'retrograde' );
+
+is_deeply( $atu->rotate( [ 1, 2, 3 ], 0 ), [ 1, 2, 3 ], 'rotate by 0' );
+
+is_deeply( $atu->rotate( [ 1, 2, 3 ], 1 ), [ 3, 1, 2 ], 'rotate by 1' );
+
+is_deeply( $atu->rotate( [ 1, 2, 3 ], 2 ), [ 2, 3, 1 ], 'rotate by 2' );
+
+is_deeply( $atu->rotate( [ 1, 2, 3 ], -1 ), [ 2, 3, 1 ], 'rotate by -1' );
+
+is_deeply(
+  $atu->set_complex( [ 0, 8, 10, 6, 7, 5, 9, 1, 3, 2, 11, 4 ] ),
+  [ [ 0,  8,  10, 6,  7,  5,  9,  1,  3,  2,  11, 4 ],
+    [ 4,  0,  2,  10, 11, 9,  1,  5,  7,  6,  3,  8 ],
+    [ 2,  10, 0,  8,  9,  7,  11, 3,  5,  4,  1,  6 ],
+    [ 6,  2,  4,  0,  1,  11, 3,  7,  9,  8,  5,  10 ],
+    [ 5,  1,  3,  11, 0,  10, 2,  6,  8,  7,  4,  9 ],
+    [ 7,  3,  5,  1,  2,  0,  4,  8,  10, 9,  6,  11 ],
+    [ 3,  11, 1,  9,  10, 8,  0,  4,  6,  5,  2,  7 ],
+    [ 11, 7,  9,  5,  6,  4,  8,  0,  2,  1,  10, 3 ],
+    [ 9,  5,  7,  3,  4,  2,  6,  10, 0,  11, 8,  1 ],
+    [ 10, 6,  8,  4,  5,  3,  7,  11, 1,  0,  9,  2 ],
+    [ 1,  9,  11, 7,  8,  6,  10, 2,  4,  3,  0,  5 ],
+    [ 8,  4,  6,  2,  3,  1,  5,  9,  11, 10, 7,  0 ]
+  ],
+  'genereate set complex'
+);
+
 is_deeply( $atu->transpose( [ 11, 0, 1, 4, 5 ], 3 ),
   [ 2, 3, 4, 7, 8 ], 'transpose' );
 
@@ -97,7 +125,7 @@ is( $atu->pitch2intervalclass(1), 1, 'pitch2intervalclass (dis3) 1' );
 is( $atu->pitch2intervalclass(2), 1, 'pitch2intervalclass (dis3) 2' );
 
 # Custom constructor
-my $stu = Music::AtonalUtil->new(DEG_IN_SCALE => 17);
+my $stu = Music::AtonalUtil->new( DEG_IN_SCALE => 17 );
 isa_ok( $stu, 'Music::AtonalUtil' );
 
 is( $stu->scale_degrees, 17, 'custom number of scale degrees' );

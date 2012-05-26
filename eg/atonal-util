@@ -19,6 +19,9 @@ my %modes = (
   normal_form            => \&normal_form,
   pitch2intervalclass    => \&pitch2intervalclass,
   prime_form             => \&prime_form,
+  retrograde             => \&retrograde,
+  rotate                 => \&rotate,
+  set_complex            => \&set_complex,
   transpose              => \&transpose,
   variances              => \&variances,
   zrelation              => \&zrelation,
@@ -119,6 +122,23 @@ sub pitch2intervalclass {
 sub prime_form {
   my ( $atu, @args ) = @_;
   emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
+}
+
+sub retrograde {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->retrograde( args2pitchset( $atu, @args ) ) );
+}
+
+sub rotate {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, 'rotate|r=s' => \my $r );
+  $r //= 0;
+  emit_pitch_set( $atu->rotate( args2pitchset( $atu, @args ), $r ) );
+}
+
+sub set_complex {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->set_complex( args2pitchset( $atu, @args ) ) );
 }
 
 sub transpose {

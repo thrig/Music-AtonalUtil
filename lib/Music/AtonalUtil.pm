@@ -231,10 +231,57 @@ sub prime_form {
   return \@prime;
 }
 
+sub retrograde {
+  my ( $self, $pset ) = @_;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
+  return [ reverse @$pset ];
+}
+
+sub rotate {
+  my ( $self, $pset, $r ) = @_;
+  croak "rotate value must be integer\n"
+    if !defined $r
+      or $r !~ /^-?\d+$/;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
+
+  my @rot;
+  if ( $r == 0 ) {
+    @rot = @$pset;
+  } else {
+    for my $i ( 0 .. $#$pset ) {
+      $rot[$i] = $pset->[ ( $i - $r ) % @$pset ];
+    }
+  }
+
+  return \@rot;
+}
+
 sub scale_degrees {
   my ( $self, $dis ) = @_;
   $self->{_DEG_IN_SCALE} = int($dis) if $dis and $dis > 1;
   return $self->{_DEG_IN_SCALE};
+}
+
+sub set_complex {
+  my ( $self, $pset ) = @_;
+
+  my $iset = $self->invert($pset);
+  my $dis  = $self->scale_degrees;
+
+  my @plex = $pset;
+  for my $i ( 1 .. $#$pset ) {
+    for my $j ( 0 .. $#$pset ) {
+      if ( $j == 0 ) {
+        $plex[$i][0] = $iset->[$i];
+      } else {
+        $plex[$i][$j] = ( $pset->[$j] + $iset->[$i] ) % $dis;
+      }
+    }
+  }
+
+  return \@plex;
 }
 
 sub transpose {
