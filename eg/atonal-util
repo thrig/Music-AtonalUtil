@@ -27,12 +27,23 @@ my %modes = (
   zrelation              => \&zrelation,
 );
 
+my %pitch2ly = (
+  'sharps' =>
+    {qw/0 c 1 cis 2 d 3 dis 4 e 5 f 6 fis 7 g 8 gis 9 a 10 ais 11 b/},
+  'flats' =>
+    {qw/0 c 1 des 2 d 3 ees 4 e 5 f 6 ges 7 g 8 aes 9 a 10 bes 11 b/},
+);
+my $flavor = 'sharps';
+
 GetOptions(
+  'flats|flat'     => \my $is_flat,
   'help'           => \&print_help,
   'listmodes'      => sub { print "$_\n" for sort keys %modes; exit 0 },
+  'ly'             => \my $lyflag,
   'scaledegrees=s' => \my $scale_degrees,
 );
 $scale_degrees //= 12;
+$flavor = 'flats' if $is_flat;
 my $mode = shift // 'help';
 
 $mode = 'help' if !exists $modes{$mode};
@@ -81,7 +92,7 @@ sub emit_pitch_set {
     if ( ref $i eq 'ARRAY' ) {
       $has_nl = emit_pitch_set( $i, 1 );
     } else {
-      print "$i ";
+      print( $lyflag ? $pitch2ly{$flavor}{$i} : $i, "\t" );
     }
   }
   print "\n" unless $has_nl;
@@ -158,8 +169,10 @@ Usage: $0 [options] mode mode-args
 
 Atonal music analysis utilities. Options:
 
+  --flats               Show flats instead of sharps when --ly used.
   --help                Print this message.
   --listmodes           Show available modes.
+  --ly                  Show lilypond note names instead of pitch numbers.
   --scaledegrees=n      Set a custom number of scale degrees (default: 12).
 
 Most modes accept a pitch set (a list of positive integers) either as
