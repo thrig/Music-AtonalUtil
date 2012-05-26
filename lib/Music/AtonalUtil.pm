@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 my $DEG_IN_SCALE = 12;
 
@@ -15,8 +15,8 @@ my $DEG_IN_SCALE = 12;
 # SUBROUTINES
 
 sub new {
-  my ( $class, $self, %param ) = @_;
-  $self //= {};
+  my ( $class, %param ) = @_;
+  my $self = {};
 
   $self->{_DEG_IN_SCALE} = int( $param{DEG_IN_SCALE} // $DEG_IN_SCALE );
   if ( $self->{_DEG_IN_SCALE} < 2 ) {

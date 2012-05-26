@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 24;
+use Test::More tests => 26;
 
 ########################################################################
 #
@@ -95,3 +95,9 @@ is( $atu->scale_degrees, 3, 'custom number of scale degrees' );
 is( $atu->pitch2intervalclass(0), 0, 'pitch2intervalclass (dis3) 0' );
 is( $atu->pitch2intervalclass(1), 1, 'pitch2intervalclass (dis3) 1' );
 is( $atu->pitch2intervalclass(2), 1, 'pitch2intervalclass (dis3) 2' );
+
+# Custom constructor
+my $stu = Music::AtonalUtil->new(DEG_IN_SCALE => 17);
+isa_ok( $stu, 'Music::AtonalUtil' );
+
+is( $stu->scale_degrees, 17, 'custom number of scale degrees' );
