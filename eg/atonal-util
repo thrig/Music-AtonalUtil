@@ -1,0 +1,166 @@
+#!/usr/bin/env perl
+#
+# Command line interface to the atonal routines in the
+# Music::AtonalUtil module.
+
+use strict;
+use warnings;
+
+use Getopt::Long qw/GetOptions GetOptionsFromArray/;
+use Music::AtonalUtil;
+
+my %modes = (
+  circular_permute       => \&circular_permute,
+  complement             => \&complement,
+  help                   => \&print_help,
+  interval_class_content => \&interval_class_content,
+  invariance_matrix      => \&invariance_matrix,
+  invert                 => \&invert,
+  normal_form            => \&normal_form,
+  pitch2intervalclass    => \&pitch2intervalclass,
+  prime_form             => \&prime_form,
+  transpose              => \&transpose,
+  variances              => \&variances,
+  zrelation              => \&zrelation,
+);
+
+GetOptions(
+  'help'           => \&print_help,
+  'listmodes'      => sub { print "$_\n" for sort keys %modes; exit 0 },
+  'scaledegrees=s' => \my $scale_degrees,
+);
+$scale_degrees //= 12;
+my $mode = shift // 'help';
+
+$mode = 'help' if !exists $modes{$mode};
+my $atu = Music::AtonalUtil->new( DEG_IN_SCALE => $scale_degrees );
+
+$modes{$mode}->( $atu, @ARGV );
+exit 0;
+
+########################################################################
+#
+# SUBROUTINES
+
+sub args2pitchset {
+  my ( $atu, @args ) = @_;
+  my $dis = $atu->scale_degrees;
+
+  if ( !@args or ( @args == 1 and $args[0] eq '-' ) ) {
+    chomp( @args = <STDIN> );
+  }
+
+  my $pitch_set;
+  for my $arg (@args) {
+    for my $p ( $arg =~ /(\d+)/g ) {
+      push @$pitch_set, $p % $dis;
+    }
+  }
+
+  return $pitch_set;
+}
+
+sub circular_permute {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->circular_permute( args2pitchset( $atu, @args ) ) );
+}
+
+sub complement {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->complement( args2pitchset( $atu, @args ) ) );
+}
+
+sub emit_pitch_set {
+  my ($pset) = @_;
+
+  my $has_nl = 0;
+  for my $i (@$pset) {
+    if ( ref $i eq 'ARRAY' ) {
+      $has_nl = emit_pitch_set( $i, 1 );
+    } else {
+      print "$i ";
+    }
+  }
+  print "\n" unless $has_nl;
+  return 1;
+}
+
+sub interval_class_content {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set(
+    $atu->interval_class_content( args2pitchset( $atu, @args ) ) );
+}
+
+sub invariance_matrix {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->invariance_matrix( args2pitchset( $atu, @args ) ) );
+}
+
+sub invert {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, 'axis|a=s' => \my $axis );
+  $axis //= 0;
+  emit_pitch_set( $atu->invert( args2pitchset( $atu, @args ), $axis ) );
+}
+
+sub normal_form {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->normal_form( args2pitchset( $atu, @args ) ) );
+
+}
+
+sub pitch2intervalclass {
+  my ( $atu, @args ) = @_;
+  die "$0 pitch2intervalclass pitch\n"
+    unless defined $args[0] and $args[0] =~ m/^\d+$/;
+  print $atu->pitch2intervalclass( $args[0] );
+}
+
+sub prime_form {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
+}
+
+sub transpose {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, 'transpose|t=s' => \my $t );
+  $t //= 0;
+  emit_pitch_set( $atu->transpose( args2pitchset( $atu, @args ), $t ) );
+}
+
+# XXX figure out how to accept multiple pitch sets.
+sub variances { my ( $atu, @args ) = @_; die "TODO" }
+sub zrelation { my ( $atu, @args ) = @_; die "TODO" }
+
+sub print_help {
+  warn <<"END_USAGE";
+Usage: $0 [options] mode mode-args
+
+Atonal music analysis utilities. Options:
+
+  --help                Print this message.
+  --listmodes           Show available modes.
+  --scaledegrees=n      Set a custom number of scale degrees (default: 12).
+
+Most modes accept a pitch set (a list of positive integers) either as
+arguments, or specified on STDIN if the arguments list is blank, or the
+final argument is a hyphen. Exceptions include:
+
+  invert --axis=n       Custom inversion axis (default is 0).
+  pitch2intervalclass   Accepts a single pitch, not a pitch set.
+  transpose --t=n       Custom transposition (default is 0).
+
+For example:
+
+  $0 -- invert --axis=3  0 3 6 7
+
+END_USAGE
+  exit 64;
+}
+
+END {
+  # Report problems when writing to stdout (perldoc perlopentut)
+  unless ( close(STDOUT) ) {
+    die "error: problem closing STDOUT: $!\n";
+  }
+}

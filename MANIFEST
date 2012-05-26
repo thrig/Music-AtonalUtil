@@ -3,3 +3,4 @@ MANIFEST
 README
 t/Music-AtonalUtil.t
 lib/Music/AtonalUtil.pm
+eg/atonal-util
