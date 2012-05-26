@@ -175,6 +175,10 @@ sub normal_form {
 
 sub pitch2intervalclass {
   my ( $self, $pitch ) = @_;
+
+  # ensure member of the tone system, otherwise strange results
+  $pitch %= $self->{_DEG_IN_SCALE};
+
   return $pitch > int( $self->{_DEG_IN_SCALE} / 2 )
     ? $self->{_DEG_IN_SCALE} - $pitch
     : $pitch;
