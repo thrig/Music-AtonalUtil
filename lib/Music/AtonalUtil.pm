@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 my $DEG_IN_SCALE = 12;
 
@@ -305,8 +305,9 @@ Then see below for methods.
 =head1 DESCRIPTION
 
 This module contains a variety of routines suitable for atonal music
-composition and analysis. L<"SEE ALSO"> has links to documentation on
-atonal analysis.
+composition and analysis. See the methods below, the test suite, and the
+C<eg/atonal-util> command line interface for ideas on how to use these
+routines. L<"SEE ALSO"> has links to documentation on atonal analysis.
 
 =head1 METHODS
 
