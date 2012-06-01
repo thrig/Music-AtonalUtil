@@ -477,7 +477,19 @@ may need reduction to B<prime_form> first).
 =item B<transpose> I<pitch set> I<integer>
 
 Transposes the given pitch set by the given integer value, returns that
-result as an array reference.
+result as an array reference. Transpositional equivalence and
+Transposition+Inversion equivalence can be iterated through by
+appropriate calls to this method and also B<invert>:
+
+  my $atu = Music::AtonalUtil->new;
+  my $ps = [ 0, 1, 5, 8 ];
+
+  my ( @transpose, @transpose_invert );
+
+  for my $i ( 0 .. 11 ) {
+    push @transpose, $atu->transpose( $ps, $i );
+    push @transpose_invert, $atu->invert( $transpose[-1] );
+  }
 
 =item B<variances> I<pitch set1> I<pitch set2>
 
