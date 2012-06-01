@@ -13,6 +13,7 @@ my %modes = (
   basic                  => \&basics,
   circular_permute       => \&circular_permute,
   complement             => \&complement,
+  equivs                 => \&equivs,
   help                   => \&print_help,
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
@@ -40,6 +41,9 @@ my %pitch2ly = (
 );
 my $flavor = 'sharps';
 
+# XXX would be nice if this only considered data up to the first mode
+# found in the arguments list, soas to avoid the -- to protect those
+# options from this code.
 GetOptions(
   'flats|flat'     => \my $is_flat,
   'help'           => \&print_help,
@@ -101,6 +105,20 @@ sub circular_permute {
 sub complement {
   my ( $atu, @args ) = @_;
   emit_pitch_set( $atu->complement( args2pitchset( $atu, @args ) ) );
+}
+
+sub equivs {
+  my ( $atu, @args ) = @_;
+
+  my ( @transpose, @transpose_invert );
+
+  for my $i ( 0 .. $atu->scale_degrees - 1 ) {
+    push @transpose, $atu->transpose( args2pitchset( $atu, @args ), $i );
+    push @transpose_invert, $atu->invert( $transpose[-1] );
+  }
+
+  emit_pitch_set( \@transpose );
+  emit_pitch_set( \@transpose_invert );
 }
 
 sub emit_pitch_set {
