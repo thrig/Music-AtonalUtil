@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 my $DEG_IN_SCALE = 12;
 

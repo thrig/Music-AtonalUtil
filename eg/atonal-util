@@ -95,14 +95,16 @@ sub complement {
 }
 
 sub emit_pitch_set {
-  my ($pset) = @_;
+  my ( $pset, %params ) = @_;
+
+  my $lyify = exists $params{lyflag} ? $params{lyflag} : $lyflag;
 
   my $has_nl = 0;
   for my $i (@$pset) {
     if ( ref $i eq 'ARRAY' ) {
-      $has_nl = emit_pitch_set( $i, 1 );
+      $has_nl = emit_pitch_set( $i, %params );
     } else {
-      print( $lyflag ? $pitch2ly{$flavor}{$i} : $i, "\t" );
+      print( $lyify ? $pitch2ly{$flavor}{$i} : $i, "\t" );
     }
   }
   print "\n" unless $has_nl;
@@ -112,12 +114,14 @@ sub emit_pitch_set {
 sub interval_class_content {
   my ( $atu, @args ) = @_;
   emit_pitch_set(
-    $atu->interval_class_content( args2pitchset( $atu, @args ) ) );
+    scalar $atu->interval_class_content( args2pitchset( $atu, @args ) ),
+    lyflag => 0 );
 }
 
 sub invariance_matrix {
   my ( $atu, @args ) = @_;
-  emit_pitch_set( $atu->invariance_matrix( args2pitchset( $atu, @args ) ) );
+  emit_pitch_set( $atu->invariance_matrix( args2pitchset( $atu, @args ) ),
+    lyflag => 0 );
 }
 
 sub invert {
@@ -198,7 +202,8 @@ sub variances {
 
 sub zrelation {
   my ($atu) = @_;
-  emit_pitch_set( [ $atu->zrelation( @{ stdin2pitchsets($atu) } ) ] );
+  emit_pitch_set( [ $atu->zrelation( @{ stdin2pitchsets($atu) } ) ],
+    lyflag => 0 );
 }
 
 sub print_help {
