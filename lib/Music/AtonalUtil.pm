@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 my $DEG_IN_SCALE = 12;
 
@@ -470,6 +470,9 @@ Creates the set complex, or a 2D array with the pitch set as the column
 headers, pitch set inversion as the row headers, and the combination of
 those two for the intersection of the row and column headers. Returns
 reference to the resulting array of arrays.
+
+Ideally the first pitch of the input pitch set should be 0 (so the input
+may need reduction to B<prime_form> first).
 
 =item B<transpose> I<pitch set> I<integer>
 
