@@ -396,7 +396,8 @@ Takes a pitch set, returns an array reference of pitch set references:
 
 This is used by the B<normal_form> method, internally. This permutation
 is identical to inversions in tonal theory, but different from the
-B<invert> method offered by this module.
+B<invert> method offered by this module. See also B<rotate> to rotate a
+pitch set by a particular amount.
 
 =item B<complement> I<pitch set>
 
@@ -443,6 +444,17 @@ system). Used internally by the B<interval_class_content> method.
 Returns the prime form of a given pitch set (via B<normal_form> and
 various other operations on the passed pitch set).
 
+=item B<retrograde> I<pitch set>
+
+Fancy term for the reverse of a list. Returns reference to array of said
+reversed data.
+
+=item B<rotate> I<pitch set> I<rotate by>
+
+Rotates the members given pitch set by the given integer. Returns array
+reference of the resulting pitch set. B<circular_permute> performs all
+the possible rotations for a pitch set.
+
 =item B<scale_degrees> I<optional integer>
 
 Without arguments, returns the number of scale degrees (12 by default).
@@ -451,6 +463,13 @@ that. Note that changing this will change the results from almost all
 the methods this module offers, and would only be used for calculations
 involving a subset of the Western 12 tone system, or some exotic scale
 with more than 12 tones.
+
+=item B<set_complex> I<pitch set>
+
+Creates the set complex, or a 2D array with the pitch set as the column
+headers, pitch set inversion as the row headers, and the combination of
+those two for the intersection of the row and column headers. Returns
+reference to the resulting array of arrays.
 
 =item B<transpose> I<pitch set> I<integer>
 
