@@ -2,5 +2,6 @@ Makefile.PL
 MANIFEST
 README
 t/Music-AtonalUtil.t
+t/pod.t
 lib/Music/AtonalUtil.pm
 eg/atonal-util
