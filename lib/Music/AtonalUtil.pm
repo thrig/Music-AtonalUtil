@@ -110,6 +110,15 @@ sub invert {
   return \@inverse;
 }
 
+sub multiply {
+  my ( $self, $pset, $factor ) = @_;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
+  $factor //= 1;
+
+  return [ map { my $p = $_ * $factor % $self->{_DEG_IN_SCALE}; $p } @$pset ];
+}
+
 sub normal_form {
   my ( $self, $pset ) = @_;
 
@@ -424,6 +433,12 @@ than learn how to read this table.)
 
 Inverts the given pitch set, by default around the 0 axis, within the
 degrees in scale. Returns resulting pitch set as an array reference.
+
+=item B<multiply> I<pitch set> I<factor>
+
+Multiplies the supplied pitch set by the given factor, modulates the
+results by the B<scale_degrees>, and returns the results as an array
+reference.
 
 =item B<normal_form> I<pitch set>
 

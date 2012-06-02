@@ -18,6 +18,7 @@ my %modes = (
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
   invert                 => \&invert,
+  multiply               => \&multiply,
   normal_form            => \&normal_form,
   pitch2intervalclass    => \&pitch2intervalclass,
   prime_form             => \&prime_form,
@@ -153,9 +154,16 @@ sub invariance_matrix {
 
 sub invert {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'axis|a=s' => \my $axis );
+  GetOptionsFromArray( \@args, 'axis|n=s' => \my $axis );
   $axis //= 0;
   emit_pitch_set( $atu->invert( args2pitchset( $atu, @args ), $axis ) );
+}
+
+sub multiply {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, 'factor|n=s' => \my $factor );
+  $factor //= 1;
+  emit_pitch_set( $atu->multiply( args2pitchset( $atu, @args ), $factor ) );
 }
 
 sub normal_form {
@@ -183,7 +191,7 @@ sub retrograde {
 
 sub rotate {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'rotate|r=s' => \my $r );
+  GetOptionsFromArray( \@args, 'rotate|n=s' => \my $r );
   $r //= 0;
   emit_pitch_set( $atu->rotate( args2pitchset( $atu, @args ), $r ) );
 }
@@ -217,7 +225,7 @@ sub stdin2pitchsets {
 
 sub transpose {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'transpose|t=s' => \my $t );
+  GetOptionsFromArray( \@args, 'transpose|n=s' => \my $t );
   $t //= 0;
   emit_pitch_set( $atu->transpose( args2pitchset( $atu, @args ), $t ) );
 }
@@ -248,14 +256,15 @@ Atonal music analysis utilities. Options:
 Most modes accept a pitch set (a list of positive integers or lilypond
 note names (see source for supported names)) either as arguments, or
 specified on STDIN if the arguments list is blank, or the final argument
-is a hyphen. Exceptions include:
+is a hyphen. Exceptions include (:
 
-  invert --axis=n       Custom inversion axis (default is 0).
+  invert    --n=N       Custom inversion axis (default is 0).
+  multiply  --n=N       Multiply the pitch set by a factor (default is 1).
   pitch2intervalclass   Accepts a single pitch, not a pitch set.
-  transpose --t=n       Custom transposition (default is 0).
+  transpose --n=N       Custom transposition (default is 0).
 
-These require two pitch sets; specify the pitch sets on STDIN (one per
-line) instead of in the arguments:
+The following require two pitch sets; specify the pitch sets on STDIN
+(one per line) instead of in the arguments:
 
   variances        Emits three lines: the intersection, the difference,
                    and the union of the supplied pitch sets.

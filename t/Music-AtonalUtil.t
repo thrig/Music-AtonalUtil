@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 32;
+use Test::More tests => 33;
 
 ########################################################################
 #
@@ -43,6 +43,12 @@ is_deeply(
 );
 
 is_deeply( $atu->invert( [ 0, 4, 7 ] ), [ 0, 8, 5 ], 'invert something' );
+
+is_deeply(
+  $atu->multiply( [ 10, 9, 0, 11 ], 5 ),
+  [ 2, 9, 0, 7 ],
+  'multiply something'
+);
 
 is_deeply(
   $atu->normal_form( [ 6, 6, 7, 2, 2, 1, 3, 3, 3 ] ),
