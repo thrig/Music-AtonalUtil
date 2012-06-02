@@ -79,8 +79,8 @@ sub args2pitchset {
     for my $p ( $arg =~ /([\d\w]+)/g ) {
       if ( $p =~ m/^\d+/ ) {
         push @$pitch_set, $p % $dis;
-      } elsif ( exists $ly2pitch{$p} ) {
-        push @$pitch_set, $ly2pitch{$p} % $dis;
+      } elsif ( exists $ly2pitch{lc $p} ) {
+        push @$pitch_set, $ly2pitch{lc $p} % $dis;
       } else {
         die "error: unknown pitch '$p' in input\n";
       }
@@ -217,8 +217,8 @@ sub stdin2pitchsets {
     for my $p ( $line =~ /([\d\w]+)/g ) {
       if ( $p =~ m/^\d+/ ) {
         push @pset, $p % $dis;
-      } elsif ( exists $ly2pitch{$p} ) {
-        push @pset, $ly2pitch{$p} % $dis;
+      } elsif ( exists $ly2pitch{lc $p} ) {
+        push @pset, $ly2pitch{lc $p} % $dis;
       } else {
         die "error: unknown pitch '$p' in input\n";
       }
