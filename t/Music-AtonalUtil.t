@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 34;
 
 ########################################################################
 #
@@ -105,6 +105,12 @@ is_deeply(
     [ 8,  4,  6,  2,  3,  1,  5,  9,  11, 10, 7,  0 ]
   ],
   'genereate set complex'
+);
+
+is_deeply(
+  $atu->tcs( [ 0, 1, 2, 3 ] ),
+  [ 4, 3, 2, 1, 0, 0, 0, 0, 0, 1, 2, 3 ],
+  'transposition common-tone structure (TCS)'
 );
 
 is_deeply( $atu->transpose( [ 11, 0, 1, 4, 5 ], 3 ),

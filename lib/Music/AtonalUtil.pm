@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 my $DEG_IN_SCALE = 12;
 
@@ -269,12 +269,20 @@ sub rotate {
 
 sub scale_degrees {
   my ( $self, $dis ) = @_;
-  $self->{_DEG_IN_SCALE} = int($dis) if $dis and $dis > 1;
+  if ( defined $dis ) {
+    croak "scale degrees value must be positive integer greater than 1\n"
+      if !defined $dis
+        or $dis !~ /^\d+$/
+        or $dis < 2;
+    $self->{_DEG_IN_SCALE} = $dis;
+  }
   return $self->{_DEG_IN_SCALE};
 }
 
 sub set_complex {
   my ( $self, $pset ) = @_;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
 
   my $iset = $self->invert($pset);
   my $dis  = $self->scale_degrees;
@@ -291,6 +299,24 @@ sub set_complex {
   }
 
   return \@plex;
+}
+
+sub tcs {
+  my ( $self, $pset ) = @_;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
+
+  my %seen;
+  @seen{@$pset} = ();
+
+  my @tcs = scalar @$pset;
+  for my $i ( 1 .. $self->{_DEG_IN_SCALE} - 1 ) {
+    $tcs[$i] = 0;
+    for my $p ( @{ $self->transpose( $pset, $i ) } ) {
+      $tcs[$i]++ if exists $seen{$p};
+    }
+  }
+  return \@tcs;
 }
 
 sub transpose {
@@ -491,6 +517,13 @@ reference to the resulting array of arrays.
 
 Ideally the first pitch of the input pitch set should be 0 (so the input
 may need reduction to B<prime_form> first).
+
+=item B<tcs> I<pitch set>
+
+Returns array reference consisting of the transposition common-tone
+structure (TCS) for the given pitch set, that is, for each of the
+possible transposition operations under the B<scale_degrees> in
+question, how many common tones there are with the original set.
 
 =item B<transpose> I<pitch set> I<integer>
 

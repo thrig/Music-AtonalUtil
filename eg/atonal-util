@@ -26,6 +26,7 @@ my %modes = (
   retrograde             => \&retrograde,
   rotate                 => \&rotate,
   set_complex            => \&set_complex,
+  tcs                    => \&tcs,
   transpose              => \&transpose,
   variances              => \&variances,
   zrelation              => \&zrelation,
@@ -142,7 +143,7 @@ sub emit_pitch_set {
     if ( ref $i eq 'ARRAY' ) {
       $has_nl = emit_pitch_set( $i, %params );
     } else {
-      print( $lyify ? $pitch2ly{$flavor}{$i} : $i, "\t" );
+      print( $lyify ? $pitch2ly{$flavor}{$i} : $i, " " );
     }
   }
   print "\n" unless $has_nl;
@@ -231,6 +232,11 @@ sub stdin2pitchsets {
   }
 
   return \@ss;
+}
+
+sub tcs {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->tcs( args2pitchset( $atu, @args ) ), lyflag => 0 );
 }
 
 sub transpose {
