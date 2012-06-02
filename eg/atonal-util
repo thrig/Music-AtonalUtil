@@ -45,7 +45,7 @@ my %pitch2ly = (
 my $flavor = 'sharps';
 
 my @leading_args;
-while ( !exists $modes{ $ARGV[0] } ) {
+while ( @ARGV and !exists $modes{ $ARGV[0] } ) {
   push @leading_args, shift @ARGV;
 }
 
