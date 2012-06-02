@@ -111,11 +111,17 @@ sub complement {
 sub equivs {
   my ( $atu, @args ) = @_;
 
-  my ( @transpose, @transpose_invert );
+  my ( @transpose, @transpose_invert, %seen );
 
   for my $i ( 0 .. $atu->scale_degrees - 1 ) {
-    push @transpose, $atu->transpose( args2pitchset( $atu, @args ), $i );
-    push @transpose_invert, $atu->invert( $transpose[-1] );
+    my $set =
+      $atu->normal_form(
+      $atu->transpose( args2pitchset( $atu, @args ), $i ) );
+    if ( !$seen{"@$set"}++ ) {
+      push @transpose, $set;
+      my $iset = $atu->normal_form( $atu->invert($set) );
+      push @transpose_invert, $iset if !$seen{"@$iset"}++;
+    }
   }
 
   emit_pitch_set( \@transpose );
