@@ -415,6 +415,9 @@ pitch set.
 
   $atu->complement([1,2,3]);    # [0,4,5,6,7,8,9,10,11]
 
+Calling B<prime_form> on the result will find the abstract complement of
+the original set.
+
 =item B<interval_class_content> I<pitch set>
 
 Given a pitch set with at least two elements, returns an array reference
