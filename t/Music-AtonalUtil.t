@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 34;
+use Test::More tests => 36;
 
 ########################################################################
 #
@@ -113,8 +113,20 @@ is_deeply(
   'transposition common-tone structure (TCS)'
 );
 
+is_deeply(
+  $atu->tcis( [ 10, 9, 0, 11 ] ),
+  [ 1, 0, 0, 0, 0, 0, 1, 2, 3, 4, 3, 2 ],
+  'transposition inversion common-tone structure (TICS)'
+);
+
 is_deeply( $atu->transpose( [ 11, 0, 1, 4, 5 ], 3 ),
   [ 2, 3, 4, 7, 8 ], 'transpose' );
+
+is_deeply(
+  $atu->transpose_invert( [ 10, 9, 0, 11 ], 1 ),
+  [ 3, 4, 1, 2 ],
+  'transpose_invert'
+);
 
 is_deeply(
   scalar $atu->variances( [ 3, 5, 6, 9 ], [ 6, 8, 9, 0 ] ),

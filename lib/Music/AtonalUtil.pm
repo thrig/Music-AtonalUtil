@@ -301,6 +301,24 @@ sub set_complex {
   return \@plex;
 }
 
+sub tcis {
+  my ( $self, $pset ) = @_;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
+
+  my %seen;
+  @seen{@$pset} = ();
+
+  my @tcis;
+  for my $i ( 0 .. $self->{_DEG_IN_SCALE} - 1 ) {
+    $tcis[$i] = 0;
+    for my $p ( @{ $self->transpose_invert( $pset, $i ) } ) {
+      $tcis[$i]++ if exists $seen{$p};
+    }
+  }
+  return \@tcis;
+}
+
 sub tcs {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -333,6 +351,22 @@ sub transpose {
     $p = ( $p + $t ) % $self->{_DEG_IN_SCALE};
   }
   return \@tset;
+}
+
+sub transpose_invert {
+  my ( $self, $pset, $t ) = @_;
+  croak "transpose value must be integer\n"
+    if !defined $t
+      or $t !~ /^-?\d+$/;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  croak "pitch set must contain something\n" if !@$pset;
+
+  my $tset = $self->invert($pset);
+
+  for my $p (@$tset) {
+    $p = ( $p + $t ) % $self->{_DEG_IN_SCALE};
+  }
+  return $tset;
 }
 
 sub variances {
@@ -391,16 +425,21 @@ composition and analysis. See the methods below, the test suite, and the
 C<eg/atonal-util> command line interface for ideas on how to use these
 routines. L<"SEE ALSO"> has links to documentation on atonal analysis.
 
+Warning! There may be errors due to misunderstanding of atonal theory by
+the autodidactic author. If in doubt, compare the results of this code
+with other material available.
+
 =head1 METHODS
 
-By default, a 12-tone system is assumed. Input values are not checked
-whether they reside inside this space. Most methods accept a pitch set
-(an array reference consisting of a list of pitch numbers), and most
-return new array references containing the results of the operation.
-Some basic sanity checking is done on the input, which may cause the
-code to B<croak> if something is awry. Elements of the pitch sets are
-not checked whether they reside inside the 12-tone basis (pitch numbers
-0 through 11), so input data may need to be first reduced as follows:
+By default, a 12-tone system is assumed. Input values are (often) not
+checked whether they reside inside this space. Most methods accept a
+pitch set (an array reference consisting of a list of pitch numbers),
+and most return new array references containing the results of the
+operation. Some basic sanity checking is done on the input, which may
+cause the code to B<croak> if something is awry. Elements of the pitch
+sets are not checked whether they reside inside the 12-tone basis
+(pitch numbers through 11), so input data may need to be first reduced
+as follows:
 
   my $atu = Music::AtonalUtil->new;
 
@@ -409,7 +448,8 @@ not checked whether they reside inside the 12-tone basis (pitch numbers
 
   say "Result: @$pitch_set";      # Result: 1 6 6 5
 
-Results from the various methods should reside within the 12-tone basis.
+Results from the various methods should reside within the
+B<scale_degrees>, unless the method returns something else.
 
 =over 4
 
@@ -525,22 +565,19 @@ structure (TCS) for the given pitch set, that is, for each of the
 possible transposition operations under the B<scale_degrees> in
 question, how many common tones there are with the original set.
 
+=item B<tcis> I<pitch set>
+
+Like B<tcs>, except uses B<transpose_invert> instead of just B<transpose>.
+
 =item B<transpose> I<pitch set> I<integer>
 
 Transposes the given pitch set by the given integer value, returns that
-result as an array reference. Transpositional equivalence and
-Transposition+Inversion equivalence can be iterated through by
-appropriate calls to this method and also B<invert>:
+result as an array reference.
 
-  my $atu = Music::AtonalUtil->new;
-  my $ps = [ 0, 1, 5, 8 ];
+=item B<transpose_invert> I<pitch set> I<integer>
 
-  my ( @transpose, @transpose_invert );
-
-  for my $i ( 0 .. 11 ) {
-    push @transpose, $atu->transpose( $ps, $i );
-    push @transpose_invert, $atu->invert( $transpose[-1] );
-  }
+Performs B<invert> on given pitch set, then transposition as per
+B<transpose>, returning the resulting array reference.
 
 =item B<variances> I<pitch set1> I<pitch set2>
 

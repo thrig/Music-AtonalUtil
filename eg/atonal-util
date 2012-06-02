@@ -27,7 +27,9 @@ my %modes = (
   rotate                 => \&rotate,
   set_complex            => \&set_complex,
   tcs                    => \&tcs,
+  tcis                   => \&tcis,
   transpose              => \&transpose,
+  transpose_invert       => \&transpose_invert,
   variances              => \&variances,
   zrelation              => \&zrelation,
 );
@@ -117,14 +119,13 @@ sub equivs {
   my ( $atu, @args ) = @_;
 
   my ( @transpose, @transpose_invert, %seen );
+  my $pset = args2pitchset( $atu, @args );
 
   for my $i ( 0 .. $atu->scale_degrees - 1 ) {
-    my $set =
-      $atu->normal_form(
-      $atu->transpose( args2pitchset( $atu, @args ), $i ) );
+    my $set = $atu->normal_form( $atu->transpose( $pset, $i ) );
     if ( !$seen{"@$set"}++ ) {
       push @transpose, $set;
-      my $iset = $atu->normal_form( $atu->invert($set) );
+      my $iset = $atu->normal_form( $atu->transpose_invert( $pset, $i ) );
       push @transpose_invert, $iset if !$seen{"@$iset"}++;
     }
   }
@@ -239,11 +240,24 @@ sub tcs {
   emit_pitch_set( $atu->tcs( args2pitchset( $atu, @args ) ), lyflag => 0 );
 }
 
+sub tcis {
+  my ( $atu, @args ) = @_;
+  emit_pitch_set( $atu->tcis( args2pitchset( $atu, @args ) ), lyflag => 0 );
+}
+
 sub transpose {
   my ( $atu, @args ) = @_;
   GetOptionsFromArray( \@args, 'transpose|n=s' => \my $t );
   $t //= 0;
   emit_pitch_set( $atu->transpose( args2pitchset( $atu, @args ), $t ) );
+}
+
+sub transpose_invert {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, 'transpose|n=s' => \my $t );
+  $t //= 0;
+  emit_pitch_set(
+    $atu->transpose_invert( args2pitchset( $atu, @args ), $t ) );
 }
 
 sub variances {
