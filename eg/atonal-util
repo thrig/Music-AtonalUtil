@@ -43,10 +43,13 @@ my %pitch2ly = (
 );
 my $flavor = 'sharps';
 
-# XXX would be nice if this only considered data up to the first mode
-# found in the arguments list, soas to avoid the -- to protect those
-# options from this code.
-GetOptions(
+my @leading_args;
+while ( !exists $modes{ $ARGV[0] } ) {
+  push @leading_args, shift @ARGV;
+}
+
+GetOptionsFromArray(
+  \@leading_args,
   'flats|flat'     => \my $is_flat,
   'help'           => \&print_help,
   'listmodes'      => sub { print "$_\n" for sort keys %modes; exit 0 },
@@ -270,6 +273,9 @@ is a hyphen. Exceptions include (:
   pitch2intervalclass   Accepts a single pitch, not a pitch set.
   transpose --n=N       Custom transposition (default is 0).
 
+Example:
+  $0 invert --axis=3  0 3 6 7
+
 The following require two pitch sets; specify the pitch sets on STDIN
 (one per line) instead of in the arguments:
 
@@ -277,7 +283,7 @@ The following require two pitch sets; specify the pitch sets on STDIN
                    and the union of the supplied pitch sets.
   zrelation        Emits 1 if pitch sets zrelated, 0 if not.
 
-  $0 -- invert --axis=3  0 3 6 7
+Example:
   (echo 0 1 3 7; echo 0 1 4 6) | $0 zrelation
 
 There is also a 'basic' mode that computes both the prime form and
