@@ -53,13 +53,13 @@ while ( @ARGV and !exists $modes{ $ARGV[0] } ) {
 
 GetOptionsFromArray(
   \@leading_args,
-  'flats|flat'     => \my $is_flat,
+  'flats'          => \my $is_flat,
   'help'           => \&print_help,
   'listmodes'      => sub { print "$_\n" for sort keys %modes; exit 0 },
   'ly'             => \my $lyflag,
   'scaledegrees=s' => \my $scale_degrees,
 );
-$scale_degrees //= 12;
+$scale_degrees //= Music::AtonalUtil->new->scale_degrees();
 $flavor = 'flats' if $is_flat;
 my $mode = shift // 'help';
 
