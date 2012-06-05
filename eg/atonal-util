@@ -10,8 +10,7 @@ use Getopt::Long qw/GetOptions GetOptionsFromArray/;
 use Music::AtonalUtil;
 
 my %modes = (
-  basic                  => \&basics,
-  basics                 => \&basics,
+  basic                  => \&basic,
   circular_permute       => \&circular_permute,
   complement             => \&complement,
   equivs                 => \&equivs,
@@ -97,7 +96,7 @@ sub args2pitchset {
   return $pitch_set;
 }
 
-sub basics {
+sub basic {
   my ( $atu, @args ) = @_;
   emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
   emit_pitch_set(
