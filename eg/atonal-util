@@ -14,7 +14,6 @@ my %modes = (
   circular_permute       => \&circular_permute,
   complement             => \&complement,
   equivs                 => \&equivs,
-  help                   => \&print_help,
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
   invert                 => \&invert,
