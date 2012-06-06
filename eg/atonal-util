@@ -42,7 +42,13 @@ my %pitch2ly = (
   'flats' =>
     {qw/0 c 1 des 2 d 3 ees 4 e 5 f 6 ges 7 g 8 aes 9 a 10 bes 11 b/},
 );
-my $flavor = 'sharps';
+my $Flavor = 'sharps';
+
+my ( $Flag_Flat, $Flag_Lyout );
+my @Std_Opts = (
+  'flats' => \$Flag_Flat,
+  'ly'    => \$Flag_Lyout,
+);
 
 my @leading_args;
 while ( @ARGV and !exists $modes{ $ARGV[0] } ) {
@@ -51,14 +57,12 @@ while ( @ARGV and !exists $modes{ $ARGV[0] } ) {
 
 GetOptionsFromArray(
   \@leading_args,
-  'flats'          => \my $is_flat,
+  @Std_Opts,
   'help'           => \&print_help,
   'listmodes'      => sub { print "$_\n" for sort keys %modes; exit 0 },
-  'ly'             => \my $lyflag,
   'scaledegrees=s' => \my $scale_degrees,
-);
+) || print_help();
 $scale_degrees //= Music::AtonalUtil->new->scale_degrees();
-$flavor = 'flats' if $is_flat;
 my $mode = shift // 'help';
 
 $mode = 'help' if !exists $modes{$mode};
@@ -97,6 +101,7 @@ sub args2pitchset {
 
 sub basic {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
   emit_pitch_set(
     scalar $atu->interval_class_content( args2pitchset( $atu, @args ) ),
@@ -105,16 +110,19 @@ sub basic {
 
 sub circular_permute {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->circular_permute( args2pitchset( $atu, @args ) ) );
 }
 
 sub complement {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->complement( args2pitchset( $atu, @args ) ) );
 }
 
 sub equivs {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
 
   my ( @transpose, @transpose_invert, %seen );
   my $pset = args2pitchset( $atu, @args );
@@ -135,14 +143,15 @@ sub equivs {
 sub emit_pitch_set {
   my ( $pset, %params ) = @_;
 
-  my $lyify = exists $params{lyflag} ? $params{lyflag} : $lyflag;
+  my $lyify = exists $params{lyflag} ? $params{lyflag} : $Flag_Lyout;
+  $Flavor = 'flats' if $Flag_Flat;
 
   my $has_nl = 0;
   for my $i (@$pset) {
     if ( ref $i eq 'ARRAY' ) {
       $has_nl = emit_pitch_set( $i, %params );
     } else {
-      print( $lyify ? $pitch2ly{$flavor}{$i} : $i, " " );
+      print( $lyify ? $pitch2ly{$Flavor}{$i} : $i, " " );
     }
   }
   print "\n" unless $has_nl;
@@ -164,26 +173,27 @@ sub invariance_matrix {
 
 sub invert {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'axis|n=s' => \my $axis );
+  GetOptionsFromArray( \@args, @Std_Opts, 'axis|n=s' => \my $axis, );
   $axis //= 0;
   emit_pitch_set( $atu->invert( args2pitchset( $atu, @args ), $axis ) );
 }
 
 sub multiply {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'factor|n=s' => \my $factor );
+  GetOptionsFromArray( \@args, @Std_Opts, 'factor|n=s' => \my $factor, );
   $factor //= 1;
   emit_pitch_set( $atu->multiply( args2pitchset( $atu, @args ), $factor ) );
 }
 
 sub normal_form {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->normal_form( args2pitchset( $atu, @args ) ) );
-
 }
 
 sub pitch2intervalclass {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   die "$0 pitch2intervalclass pitch\n"
     unless defined $args[0] and $args[0] =~ m/^\d+$/;
   print $atu->pitch2intervalclass( $args[0] );
@@ -191,23 +201,26 @@ sub pitch2intervalclass {
 
 sub prime_form {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
 }
 
 sub retrograde {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->retrograde( args2pitchset( $atu, @args ) ) );
 }
 
 sub rotate {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'rotate|n=s' => \my $r );
+  GetOptionsFromArray( \@args, @Std_Opts, 'rotate|n=s' => \my $r, );
   $r //= 0;
   emit_pitch_set( $atu->rotate( args2pitchset( $atu, @args ), $r ) );
 }
 
 sub set_complex {
   my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->set_complex( args2pitchset( $atu, @args ) ) );
 }
 
@@ -245,21 +258,22 @@ sub tcis {
 
 sub transpose {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'transpose|n=s' => \my $t );
+  GetOptionsFromArray( \@args, @Std_Opts, 'transpose|n=s' => \my $t, );
   $t //= 0;
   emit_pitch_set( $atu->transpose( args2pitchset( $atu, @args ), $t ) );
 }
 
 sub transpose_invert {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, 'transpose|n=s' => \my $t );
+  GetOptionsFromArray( \@args, @Std_Opts, 'transpose|n=s' => \my $t, );
   $t //= 0;
   emit_pitch_set(
     $atu->transpose_invert( args2pitchset( $atu, @args ), $t ) );
 }
 
 sub variances {
-  my ($atu) = @_;
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( [ $atu->variances( @{ stdin2pitchsets($atu) } ) ] );
 }
 

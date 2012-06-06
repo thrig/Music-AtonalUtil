@@ -52,37 +52,88 @@ _atonalutil_mode() {
   fi
 }
 
-# XXX except most don't actually have any arguments, so this probably
-# could be better handled by mostly no-ops and a few calls where needed.
-_atonalutil_basic() { }
-_atonalutil_circular_permute() { }
-_atonalutil_complement() { }
-_atonalutil_equivs() { }
+# XXX too much copy-n-paste hereafter
+_atonalutil_basic() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_circular_permute() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_complement() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_equivs() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
 _atonalutil_interval_class_content() { }
 _atonalutil_invariance_matrix() { }
 _atonalutil_invert() { 
   _arguments -s \
-    '--axis=[inversion axis]:value:( )'
+    '--axis=[inversion axis]:value:( )' \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
 }
-_atonalutil_multiply() { }
-_atonalutil_normal_form() { }
-_atonalutil_pitch2intervalclass() { }
-_atonalutil_prime_form() { }
-_atonalutil_retrograde() { }
+_atonalutil_multiply() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_normal_form() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_pitch2intervalclass() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_prime_form() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_retrograde() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
 _atonalutil_rotate() { 
   _arguments -s \
-    '--rotate=[rotate by]:value:( )'
+    '--rotate=[rotate by]:value:( )' \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
 }
-_atonalutil_set_complex() { }
+_atonalutil_set_complex() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
 _atonalutil_tcis() { }
 _atonalutil_tcs() { }
 _atonalutil_transpose() {
   _arguments -s \
-    '--transpose=[transposition value]:value:( )'
+    '--transpose=[transposition value]:value:( )' \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
 }
 _atonalutil_transpose_invert() {
   _arguments -s \
-    '--transpose=[transposition value]:value:( )'
+    '--transpose=[transposition value]:value:( )' \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
 }
-_atonalutil_variances() { }
+_atonalutil_variances() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
 _atonalutil_zrelation() { }
