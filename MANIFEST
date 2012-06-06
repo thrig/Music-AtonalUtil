@@ -4,4 +4,5 @@ README
 t/Music-AtonalUtil.t
 t/pod.t
 lib/Music/AtonalUtil.pm
+eg/_atonal-util
 eg/atonal-util

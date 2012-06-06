@@ -1,0 +1,88 @@
+#compdef atonal-util
+#
+# ZSH completion for atonal-util. Install to a $fpath directory.
+
+_atonal-util() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '(-)--help[display help]' \
+    '--ly[emit notes not pitch numbers]' \
+    '(-)--listmodes[show available modes]' \
+    '--scaledegrees=[degrees in the scale]' \
+    '*::atonal-util command:_atonalutil_mode'
+}
+
+_atonalutil_mode() {
+  _atonalutil_modes=(
+    'basic:prime_form and interval_class_content info' \
+    'circular_permute:all permutations of pitch set'
+    'complement:complement of set'
+    'equivs:Tn and TnI equivalents' \
+    'interval_class_content:ICC'
+    'invariance_matrix:invarience under TnI' \
+    'invert:inversion' \
+    'multiply:multiplication' \
+    'normal_form:normal_form' \
+    'pitch2intervalclass:pitch to interval class' \
+    'prime_form:prime_form' \
+    'retrograde:reverse' \
+    'rotate:specific permutation' \
+    'set_complex:2D pitch set to inversion chart' \
+    'tcis:transposition inversion common-tone structure' \
+    'tcs:transposition common-tone structure' \
+    'transpose:Tn' \
+    'transpose_invert:TnI' \
+    'variances:intersection, difference, and union of two sets' \
+    'zrelation:whether two sets share same ICC'
+  )
+
+  if (( CURRENT == 1 )); then
+    _describe -t commands 'atonalutil command' _atonalutil_modes
+  else
+    local curcontext="$curcontext"
+
+    cmd="${_atonalutil_modes[(r)$words[1]:*]%%:*}"
+    if (( $#cmd )); then
+      curcontext="${curcontext%:*:*}:atonalutil-${cmd}:"
+      _call_function ret _atonalutil_$cmd || _message 'no more arguments'
+    else
+      _message "unknown atonalutil command: $words[1]"
+    fi
+    return ret
+  fi
+}
+
+# XXX except most don't actually have any arguments, so this probably
+# could be better handled by mostly no-ops and a few calls where needed.
+_atonalutil_basic() { }
+_atonalutil_circular_permute() { }
+_atonalutil_complement() { }
+_atonalutil_equivs() { }
+_atonalutil_interval_class_content() { }
+_atonalutil_invariance_matrix() { }
+_atonalutil_invert() { 
+  _arguments -s \
+    '--axis=[inversion axis]:value:( )'
+}
+_atonalutil_multiply() { }
+_atonalutil_normal_form() { }
+_atonalutil_pitch2intervalclass() { }
+_atonalutil_prime_form() { }
+_atonalutil_retrograde() { }
+_atonalutil_rotate() { 
+  _arguments -s \
+    '--rotate=[rotate by]:value:( )'
+}
+_atonalutil_set_complex() { }
+_atonalutil_tcis() { }
+_atonalutil_tcs() { }
+_atonalutil_transpose() {
+  _arguments -s \
+    '--transpose=[transposition value]:value:( )'
+}
+_atonalutil_transpose_invert() {
+  _arguments -s \
+    '--transpose=[transposition value]:value:( )'
+}
+_atonalutil_variances() { }
+_atonalutil_zrelation() { }
