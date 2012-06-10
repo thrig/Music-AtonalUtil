@@ -63,9 +63,9 @@ GetOptionsFromArray(
   'scaledegrees=s' => \my $scale_degrees,
 ) || print_help();
 $scale_degrees //= Music::AtonalUtil->new->scale_degrees();
-my $mode = shift // 'help';
+my $mode = shift;
 
-$mode = 'help' if !exists $modes{$mode};
+print_help() if !defined $mode || !exists $modes{$mode};
 my $atu = Music::AtonalUtil->new( DEG_IN_SCALE => $scale_degrees );
 
 $modes{$mode}->( $atu, @ARGV );
