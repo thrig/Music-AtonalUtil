@@ -62,6 +62,9 @@ sub interval_class_content {
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain at least two elements\n" if @$pset < 2;
 
+  my %seen;
+  @$pset = sort { $a <=> $b } grep { !$seen{$_}++ } @$pset;
+
   my %icc;
   for my $i ( 1 .. $#$pset ) {
     for my $j ( 0 .. $i - 1 ) {

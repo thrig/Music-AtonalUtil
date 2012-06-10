@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 36;
+use Test::More tests => 37;
 
 ########################################################################
 #
@@ -34,6 +34,14 @@ is_deeply(
   scalar $atu->interval_class_content( [ 0, 2, 4 ] ),
   [ 0, 2, 0, 1, 0, 0 ],
   'icc icv'
+);
+
+is_deeply(
+  scalar $atu->interval_class_content(
+    [qw/9 0 2 4 6 4 2 11 7 9 11 0 9 8 9 11 8 4/]
+  ),
+  [qw/4 6 5 5 6 2/],
+  'icc icv of non-unique pitch set'
 );
 
 is_deeply(
