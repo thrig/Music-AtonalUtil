@@ -6,7 +6,7 @@ use warnings;
 
 use Carp qw/croak/;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 my $DEG_IN_SCALE = 12;
 
@@ -456,7 +456,7 @@ B<scale_degrees>, unless the method returns something else.
 
 =over 4
 
-=item B<new> I<parameter pairs ...>
+=item B<new> I<parameter_pairs ...>
 
 Constructor. The degrees in the scale can be adjusted via:
 
@@ -466,7 +466,7 @@ or some other positive integer greater than one, to use a non-12-tone
 basis for subsequent method calls. This value can be set or inspected
 via the B<scale_degrees> call.
 
-=item B<circular_permute> I<pitch set>
+=item B<circular_permute> I<pitch_set>
 
 Takes a pitch set, returns an array reference of pitch set references:
 
@@ -477,7 +477,7 @@ is identical to inversions in tonal theory, but different from the
 B<invert> method offered by this module. See also B<rotate> to rotate a
 pitch set by a particular amount.
 
-=item B<complement> I<pitch set>
+=item B<complement> I<pitch_set>
 
 Returns the pitches of the scale degrees not set in the passed
 pitch set.
@@ -487,32 +487,47 @@ pitch set.
 Calling B<prime_form> on the result will find the abstract complement of
 the original set.
 
-=item B<interval_class_content> I<pitch set>
+=item B<interval_class_content> I<pitch_set>
 
 Given a pitch set with at least two elements, returns an array reference
 (and in list context also a hash reference) representing the interval-
 class vector information. Pitch sets with similar ic content tend to
 sound the same (see also B<zrelation>).
 
-=item B<invariance_matrix> I<pitch set>
+This vector is also known as a pitch-class interval (PIC) vector or
+absolute pitch-class interval (APIC) vector:
+
+https://en.wikipedia.org/wiki/Interval_vector
+
+=item B<invariance_matrix> I<pitch_set>
 
 Returns reference to an array of references that comprise the invarience
 under Transpose(N)Inversion operations on the given pitch set. (With
 code, probably easier to iterate through all the T and T(N)I operations
 than learn how to read this table.)
 
-=item B<invert> I<pitch set> I<optional axis>
+=item B<invert> I<pitch_set> I<optional_axis>
 
 Inverts the given pitch set, by default around the 0 axis, within the
 degrees in scale. Returns resulting pitch set as an array reference.
+Some examples or styles assume rotation with an axis of 6, for example:
 
-=item B<multiply> I<pitch set> I<factor>
+https://en.wikipedia.org/wiki/Set_%28music%29#Serial
+
+Has the "retrograde-inverse transposition" of C<0 11 3> becomming C<4 8
+7>. This can be reproduced via:
+
+  my $p = $atu->retrograde([0,11,3]);
+  $p = $atu->invert($p, 6);
+  $p = $atu->transpose($p, 1);
+
+=item B<multiply> I<pitch_set> I<factor>
 
 Multiplies the supplied pitch set by the given factor, modulates the
 results by the B<scale_degrees>, and returns the results as an array
 reference.
 
-=item B<normal_form> I<pitch set>
+=item B<normal_form> I<pitch_set>
 
 Returns the normal form of the passed pitch set, via a "packed from the
 right" method outlined in the www.mta.ca link, below, so may return
@@ -526,23 +541,23 @@ Returns the interval class a given pitch belongs to (0 is 0, 11 maps
 down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
 system). Used internally by the B<interval_class_content> method.
 
-=item B<prime_form> I<pitch set>
+=item B<prime_form> I<pitch_set>
 
 Returns the prime form of a given pitch set (via B<normal_form> and
 various other operations on the passed pitch set).
 
-=item B<retrograde> I<pitch set>
+=item B<retrograde> I<pitch_set>
 
 Fancy term for the reverse of a list. Returns reference to array of said
 reversed data.
 
-=item B<rotate> I<pitch set> I<rotate by>
+=item B<rotate> I<pitch_set> I<rotate_by>
 
 Rotates the members given pitch set by the given integer. Returns array
 reference of the resulting pitch set. B<circular_permute> performs all
 the possible rotations for a pitch set.
 
-=item B<scale_degrees> I<optional integer>
+=item B<scale_degrees> I<optional_integer>
 
 Without arguments, returns the number of scale degrees (12 by default).
 If passed a positive integer greater than two, sets the scale degrees to
@@ -551,7 +566,7 @@ the methods this module offers, and would only be used for calculations
 involving a subset of the Western 12 tone system, or some exotic scale
 with more than 12 tones.
 
-=item B<set_complex> I<pitch set>
+=item B<set_complex> I<pitch_set>
 
 Creates the set complex, or a 2D array with the pitch set as the column
 headers, pitch set inversion as the row headers, and the combination of
@@ -561,35 +576,35 @@ reference to the resulting array of arrays.
 Ideally the first pitch of the input pitch set should be 0 (so the input
 may need reduction to B<prime_form> first).
 
-=item B<tcs> I<pitch set>
+=item B<tcs> I<pitch_set>
 
 Returns array reference consisting of the transposition common-tone
 structure (TCS) for the given pitch set, that is, for each of the
 possible transposition operations under the B<scale_degrees> in
 question, how many common tones there are with the original set.
 
-=item B<tcis> I<pitch set>
+=item B<tcis> I<pitch_set>
 
 Like B<tcs>, except uses B<transpose_invert> instead of just B<transpose>.
 
-=item B<transpose> I<pitch set> I<integer>
+=item B<transpose> I<pitch_set> I<integer>
 
 Transposes the given pitch set by the given integer value, returns that
 result as an array reference.
 
-=item B<transpose_invert> I<pitch set> I<integer>
+=item B<transpose_invert> I<pitch_set> I<integer>
 
 Performs B<invert> on given pitch set, then transposition as per
 B<transpose>, returning the resulting array reference.
 
-=item B<variances> I<pitch set1> I<pitch set2>
+=item B<variances> I<pitch_set1> I<pitch_set2>
 
 Given two pitch sets, in scalar context returns the shared notes of
 those two pitch sets as an array reference. In list context, returns the
 shared notes (intersection), difference, and union all as array
 references.
 
-=item B<zrelation> I<pitch set1> I<pitch set2>
+=item B<zrelation> I<pitch_set1> I<pitch_set2>
 
 Given two pitch sets, returns true if the two sets share the same
 B<interval_class_content>, false if not.
