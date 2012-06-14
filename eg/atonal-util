@@ -384,7 +384,7 @@ Apply a series of transformations to a pitch set:
   retrograde
   invert 6
   transpose 1
-  $ atonal-util recipe --file=~/tmp/asdf --ly 0 11 3
+  $ atonal-util recipe --file=rules --ly 0 11 3
   4 8 7
 
 =head1 DESCRIPTION
