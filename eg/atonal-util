@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 # Command line interface to the atonal routines in the Music::AtonalUtil
-# module. Use the --help option to see usage information.
+# module. Run perldoc(1) on this script for additional documentation.
 
 use strict;
 use warnings;
@@ -346,6 +346,8 @@ interval class content of the input pitch set:
 
   $0 --ly basic c e g
 
+Run perldoc(1) on this script for additional documentation.
+
 END_USAGE
   exit 64;
 }
@@ -356,3 +358,204 @@ END {
     die "error: problem closing STDOUT: $!\n";
   }
 }
+
+__END__
+
+=head1 NAME
+
+atonal-util - routines for atonal composition and analysis
+
+=head1 SYNOPSIS
+
+Prime form and APIC vector for a pitch set:
+
+  $ atonal-util basic --ly f fis c
+  c cis fis
+  1 0 0 0 1 1 
+
+Apply a series of transformations to a pitch set:
+
+  $ cat rules
+  retrograde
+  invert 6
+  transpose 1
+  $ atonal-util recipe --file=~/tmp/asdf --ly 0 11 3
+  4 8 7
+
+=head1 DESCRIPTION
+
+Routines for atonal music composition and analysis. Global options and
+an operating mode should be supplied, followed by any mode specific
+arguments and a pitch set. Pitch sets can be read as arguments or from
+standard input; some modes require two pitch sets that must be supplied
+one per line on standard input.
+
+See also L<Music::AtonalUtil> for more documentation.
+
+=head1 OPTIONS
+
+This script currently supports the following global command line switches:
+
+=over 4
+
+=item B<--flats>
+
+Uses flats instead of sharps in output (but only with B<--ly>).
+
+=item B<--help>
+
+Displays help and exits.
+
+=item B<--listmodes>
+
+Displays supported operation modes.
+
+=item B<--ly>
+
+Show lilypond note names instead of raw pitch numbers.
+
+=item B<--scaledegrees>
+
+Adjust the number of scale degrees (default: 12).
+
+=back
+
+=head1 MODES
+
+Most all modes accept a pitch set (list of raw pitch numbers (0..number
+of scale degrees) or lilypond note names (bis, c, des, etc.) either on
+the command line or via standard input, though there are exceptions.
+
+The gobal B<--ly> and B<--flats> can be specified as options to modes
+that emit pitches. See also L<Music::AtonalUtil> for more documentation.
+
+=over 4
+
+=item B<basic> I<pitch_set>
+
+Shows the B<prime_form> and B<interval_class_content>.
+
+=item B<circular_permute>
+
+See L<Music::AtonalUtil>.
+
+=item B<complement>
+
+See L<Music::AtonalUtil>.
+
+=item B<equivs>
+
+Equivalents under transposition and inverse transposition. An optional
+axis of inversion (default: 0, though some forms use 6) can be supplied.
+
+=item B<interval_class_content>
+
+See L<Music::AtonalUtil>.
+
+=item B<invariance_matrix>
+
+See L<Music::AtonalUtil>.
+
+=item B<invert> I<--axis=inversion_axis>
+
+See L<Music::AtonalUtil>.
+
+=item B<multiply>
+
+See L<Music::AtonalUtil>.
+
+=item B<normal_form>
+
+See L<Music::AtonalUtil>.
+
+=item B<pitch2intervalclass> I<pitch>
+
+See L<Music::AtonalUtil>.
+
+=item B<prime_form>
+
+See L<Music::AtonalUtil>.
+
+=item B<recipe> I<--file=recipefile>
+
+Apply a series of named operations from a batch file to a pitch set,
+for example:
+
+  retrograde
+  invert 6
+  transpose 1
+
+=item B<retrograde>
+
+See L<Music::AtonalUtil>.
+
+=item B<rotate>
+
+See L<Music::AtonalUtil>.
+
+=item B<set_complex>
+
+See L<Music::AtonalUtil>.
+
+=item B<tcis>
+
+See L<Music::AtonalUtil>.
+
+=item B<tcs>
+
+See L<Music::AtonalUtil>.
+
+=item B<transpose>
+
+See L<Music::AtonalUtil>.
+
+=item B<transpose_invert>
+
+See L<Music::AtonalUtil>.
+
+=item B<variances>
+
+Accepts two pitch sets, one per line, via standard input.
+
+=item B<zrelation>
+
+Accepts two pitch sets, one per line, via standard input.
+
+=back
+
+=head1 FILES
+
+There is an associated C<_atonal-util> completion script for the Z-Shell
+(ZSH) that can assist with tab completion of options and modes.
+
+=head1 BUGS
+
+=head2 Reporting Bugs
+
+If the bug is in the latest version, send a report to the author.
+Patches that fix problems or add new features are welcome.
+
+http://github.com/thrig/Music-AtonalUtil
+
+=head2 Known Issues
+
+Poor naming conventions and standards of underlying music theory and any
+associated mistakes in understanding thereof by the author.
+
+=head1 SEE ALSO
+
+perl(1), L<Music::AtonalUtil>
+
+=head1 AUTHOR
+
+Jeremy Mates
+
+=head1 COPYRIGHT
+
+Copyright (C) 2012 by Jeremy Mates
+
+This script is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, either Perl version 5.14.2 or, at
+your option, any later version of Perl 5 you may have available.
+
+=cut
