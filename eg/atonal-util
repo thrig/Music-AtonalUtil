@@ -216,6 +216,7 @@ sub recipe {
   open my $fh, '<', $rfile or die "could not open '$rfile': $!\n";
   eval {
     while ( my ( $method, @margs ) = split ' ', readline $fh ) {
+      next if !$method or $method =~ m/^[\s#]/;
       chomp @margs;
       die "not a ", ref $atu, " method" unless $atu->can($method);
       $wps = $atu->$method( $wps, @margs );
