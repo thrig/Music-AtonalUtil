@@ -5,7 +5,7 @@
 _atonal-util() {
   _arguments -s \
     '--flats[print notes as flats]' \
-    '(-)--help[display help]' \
+    '(- *)--help[display help]' \
     '--ly[emit notes not pitch numbers]' \
     '(-)--listmodes[show available modes]' \
     '--scaledegrees=[degrees in the scale]' \
