@@ -21,6 +21,7 @@ my %modes = (
   normal_form            => \&normal_form,
   pitch2intervalclass    => \&pitch2intervalclass,
   prime_form             => \&prime_form,
+  recipe                 => \&recipe,
   retrograde             => \&retrograde,
   rotate                 => \&rotate,
   set_complex            => \&set_complex,
@@ -203,6 +204,28 @@ sub prime_form {
   my ( $atu, @args ) = @_;
   GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
+}
+
+sub recipe {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts, 'file=s' => \my $rfile );
+
+  my $ps = args2pitchset( $atu, @args );
+  my $wps = [@$ps];
+
+  open my $fh, '<', $rfile or die "could not open '$rfile': $!\n";
+  eval {
+    while ( my ( $method, @margs ) = split ' ', readline $fh ) {
+      chomp @margs;
+      die "not a ", ref $atu, " method" unless $atu->can($method);
+      $wps = $atu->$method( $wps, @margs );
+    }
+  };
+  if ($@) {
+    chomp $@;
+    die "recipe error at '$rfile' line $.: $@\n";
+  }
+  emit_pitch_set($wps);
 }
 
 sub retrograde {

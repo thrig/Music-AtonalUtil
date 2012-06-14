@@ -25,6 +25,7 @@ _atonalutil_mode() {
     'normal_form:normal_form' \
     'pitch2intervalclass:pitch to interval class' \
     'prime_form:prime_form' \
+    'recipe:list of methods to operate on a set with' \
     'retrograde:reverse' \
     'rotate:specific permutation' \
     'set_complex:2D pitch set to inversion chart' \
@@ -100,6 +101,12 @@ _atonalutil_prime_form() {
   _arguments -s \
     '--flats[print notes as flats]' \
     '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_recipe() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]' \
+    '--file=[recipe file]:filename:_files'
 }
 _atonalutil_retrograde() {
   _arguments -s \
