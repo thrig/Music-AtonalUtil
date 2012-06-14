@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 37;
+use Test::More tests => 38;
 
 ########################################################################
 #
@@ -134,6 +134,12 @@ is_deeply(
   $atu->transpose_invert( [ 10, 9, 0, 11 ], 1 ),
   [ 3, 4, 1, 2 ],
   'transpose_invert'
+);
+
+is_deeply(
+  $atu->transpose_invert( [ 0, 11, 3 ], 1, 6 ),
+  [ 7, 8, 4 ],
+  'transpose_invert with axis'
 );
 
 is_deeply(

@@ -357,14 +357,15 @@ sub transpose {
 }
 
 sub transpose_invert {
-  my ( $self, $pset, $t ) = @_;
+  my ( $self, $pset, $t, $axis ) = @_;
   croak "transpose value must be integer\n"
     if !defined $t
       or $t !~ /^-?\d+$/;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
+  $axis //= 0;
 
-  my $tset = $self->invert($pset);
+  my $tset = $self->invert( $pset, $axis );
 
   for my $p (@$tset) {
     $p = ( $p + $t ) % $self->{_DEG_IN_SCALE};
@@ -610,6 +611,20 @@ Given two pitch sets, returns true if the two sets share the same
 B<interval_class_content>, false if not.
 
 =back
+
+=head1 BUGS
+
+=head2 Reporting Bugs
+
+If the bug is in the latest version, send a report to the author.
+Patches that fix problems or add new features are welcome.
+
+http://github.com/thrig/Music-AtonalUtil
+
+=head2 Known Issues
+
+Poor naming conventions and standards of underlying music theory and any
+associated mistakes in understanding thereof by the author.
 
 =head1 SEE ALSO
 
