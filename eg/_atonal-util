@@ -134,6 +134,7 @@ _atonalutil_transpose() {
 }
 _atonalutil_transpose_invert() {
   _arguments -s \
+    '--axis=[inversion axis]:value:( )' \
     '--transpose=[transposition value]:value:( )' \
     '--flats[print notes as flats]' \
     '--ly[emit notes not pitch numbers]'

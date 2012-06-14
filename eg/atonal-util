@@ -288,10 +288,15 @@ sub transpose {
 
 sub transpose_invert {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'transpose|n=s' => \my $t, );
-  $t //= 0;
+  GetOptionsFromArray(
+    \@args, @Std_Opts,
+    'axis|a=s'      => \my $axis,
+    'transpose|t=s' => \my $t,
+  );
+  $axis //= 0;
+  $t    //= 0;
   emit_pitch_set(
-    $atu->transpose_invert( args2pitchset( $atu, @args ), $t ) );
+    $atu->transpose_invert( args2pitchset( $atu, @args ), $t, $axis ) );
 }
 
 sub variances {
