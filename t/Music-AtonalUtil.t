@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 38;
+use Test::More tests => 40;
 
 ########################################################################
 #
@@ -74,6 +74,18 @@ is_deeply(
   $atu->normal_form( [ 8, 10, 2, 4 ] ),
   [ 2, 4, 8, 10 ],
   'normal form lowest number fallthrough'
+);
+
+is_deeply(
+  $atu->notes2pitches( [qw/c ees g/] ),
+  [ 0, 3, 7 ],
+  'notes2pitches default conversion'
+);
+
+is_deeply(
+  $atu->notes2pitches( [ 'C', 'F#' ], { c => 0, 'f#' => 6 } ),
+  [ 0, 6 ],
+  'notes2pitches custom conversion'
 );
 
 is( $atu->pitch2intervalclass(0),  0, 'pitch2intervalclass 0' );

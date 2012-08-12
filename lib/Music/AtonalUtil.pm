@@ -185,6 +185,46 @@ sub normal_form {
   return \@normal;
 }
 
+sub notes2pitches {
+  my ( $self, $noteset, $conversion ) = @_;
+  croak "note set must be array ref\n" unless ref $noteset eq 'ARRAY';
+
+  # For lilypond default input, which is what I mostly use, so there.
+  if ( !defined $conversion ) {
+    $conversion = {
+      bis => 0,
+      c   => 0,
+      cis => 1,
+      des => 1,
+      d   => 2,
+      dis => 3,
+      ees => 3,
+      e   => 4,
+      fes => 4,
+      eis => 5,
+      f   => 5,
+      fis => 6,
+      ges => 6,
+      g   => 7,
+      gis => 8,
+      aes => 8,
+      a   => 9,
+      ais => 10,
+      bes => 10,
+      b   => 11,
+    };
+  } elsif ( ref $conversion ne 'HASH' ) {
+    croak "conversion must be hash ref\n";
+  }
+
+  my @pitches;
+  for my $n (@$noteset) {
+    croak "unknown note '$n'\n" unless exists $conversion->{ lc $n };
+    push @pitches, $conversion->{ lc $n };
+  }
+  return \@pitches;
+}
+
 sub pitch2intervalclass {
   my ( $self, $pitch ) = @_;
 
@@ -535,6 +575,17 @@ right" method outlined in the www.mta.ca link, below, so may return
 different normal forms than the Allen Forte method. There is stub code
 for the Allen Forte method in this module, though I lack enough
 information to verify if that code is correct.
+
+=item B<notes2pitches> I<note_set> I<optional_conversion_hashref>
+
+Utility method that converts note names to pitch numbers, and returns an
+arrary reference of the resulting pitch set:
+
+  $atu->notes2pitches([qw/c ees g/]);  # returns [0,3,7]
+
+An optional hash reference can also be supplied, this should contain
+note name keys to pitch number value mappings (note names are lowercased
+in the code prior to lookup).
 
 =item B<pitch2intervalclass> I<pitch>
 
