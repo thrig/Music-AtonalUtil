@@ -3,8 +3,14 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
   NAME         => 'Music::AtonalUtil',
-  VERSION_FROM => 'lib/Music/AtonalUtil.pm',    # finds $VERSION
-  PREREQ_PM    => {},                           # e.g., Module::Name => 1.1
+  VERSION_FROM => 'lib/Music/AtonalUtil.pm',
+  LICENSE      => 'perl',
+  PREREQ_PM    => {
+    Algorithm::Permute => 0,
+    Carp               => 0,
+    List::MoreUtils    => 0,
+    Test::More         => 0,
+  },
   ( $] >= 5.005
     ?    ## Add these new keywords supported since 5.005
       (
@@ -14,5 +20,4 @@ WriteMakefile(
       )
     : ()
   ),
-  LICENSE => 'perl',
 );

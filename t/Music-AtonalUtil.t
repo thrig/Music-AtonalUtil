@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 40;
+use Test::More tests => 41;
 
 ########################################################################
 #
@@ -88,6 +88,8 @@ is_deeply(
   'notes2pitches custom conversion'
 );
 
+is( $atu->notes2pitches('d'), 2, 'notes2pitches single note' );
+
 is( $atu->pitch2intervalclass(0),  0, 'pitch2intervalclass 0' );
 is( $atu->pitch2intervalclass(1),  1, 'pitch2intervalclass 1' );
 is( $atu->pitch2intervalclass(11), 1, 'pitch2intervalclass 11' );
@@ -126,6 +128,31 @@ is_deeply(
   ],
   'genereate set complex'
 );
+
+# XXX do not know what order permutations will be generated with, and
+# mostly just leaning on Algorithm::Permute, so skip 'subset' tests.
+#
+#is_deeply( $atu->subsets( [ 0, 1 ] ), [ [0], [1] ], 'subset test 1' );
+#
+#use Data::Dumper; diag Dumper $atu->subsets( [ 0, 1, 2 ] );
+#is_deeply(
+#  $atu->subsets( [ 0, 1, 2 ] ),
+#  [ [ 0, 1 ], [ 0, 2 ], [ 1, 2 ] ],
+#  'subset test 2'
+#);
+#
+#is_deeply(
+#  $atu->subsets( [ 0, 1, 2, 3 ] ),
+#  [ [ 0, 1, 2 ], [ 0, 1, 3 ], [ 0, 2, 3 ], [ 1, 2, 3 ], ],
+#  'subset test 3'
+#);
+#
+#use Data::Dumper; diag Dumper $atu->subsets( [ 0, 1, 2, 3 ], 2 );
+#is_deeply(
+#  $atu->subsets( [ 0, 1, 2, 3 ], 2 ),
+#  [ [ 0, 1 ], [ 0, 2 ], [ 0, 3 ], [ 1, 2 ], [ 1, 3 ], [ 2, 3 ], ],
+#  'subset test 4'
+#);
 
 is_deeply(
   $atu->tcs( [ 0, 1, 2, 3 ] ),

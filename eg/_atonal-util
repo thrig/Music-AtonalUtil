@@ -2,12 +2,13 @@
 #
 # ZSH completion for atonal-util. Install to a $fpath directory.
 
+# XXX --scaledegrees=anything is messing up subsequent completion
 _atonal-util() {
-  _arguments -s \
+  _arguments \
     '--flats[print notes as flats]' \
     '(- *)--help[display help]' \
     '--ly[emit notes not pitch numbers]' \
-    '(-)--listmodes[show available modes]' \
+    '(- *)--listmodes[show available modes]' \
     '--scaledegrees=[degrees in the scale]' \
     '*::atonal-util command:_atonalutil_mode'
 }
@@ -29,6 +30,7 @@ _atonalutil_mode() {
     'retrograde:reverse' \
     'rotate:specific permutation' \
     'set_complex:2D pitch set to inversion chart' \
+    'subsets:subsets of a given pitch set' \
     'tcis:transposition inversion common-tone structure' \
     'tcs:transposition common-tone structure' \
     'transpose:Tn' \
@@ -121,6 +123,12 @@ _atonalutil_rotate() {
 }
 _atonalutil_set_complex() {
   _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_set_complex() {
+  _arguments -s \
+    '--length=[length]:value:( )' \
     '--flats[print notes as flats]' \
     '--ly[emit notes not pitch numbers]'
 }

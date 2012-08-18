@@ -25,6 +25,7 @@ my %modes = (
   retrograde             => \&retrograde,
   rotate                 => \&rotate,
   set_complex            => \&set_complex,
+  subsets                => \&subsets,
   tcs                    => \&tcs,
   tcis                   => \&tcis,
   transpose              => \&transpose,
@@ -246,6 +247,12 @@ sub set_complex {
   my ( $atu, @args ) = @_;
   GetOptionsFromArray( \@args, @Std_Opts );
   emit_pitch_set( $atu->set_complex( args2pitchset( $atu, @args ) ) );
+}
+
+sub subsets {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts, 'length|len=i' => \my $l, );
+  emit_pitch_set( $atu->subsets( args2pitchset( $atu, @args ), $l ) );
 }
 
 sub stdin2pitchsets {
@@ -500,6 +507,10 @@ See L<Music::AtonalUtil>.
 See L<Music::AtonalUtil>.
 
 =item B<set_complex>
+
+See L<Music::AtonalUtil>.
+
+=item B<subsets>
 
 See L<Music::AtonalUtil>.
 

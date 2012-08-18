@@ -4,9 +4,11 @@ use 5.010;
 use strict;
 use warnings;
 
+use Algorithm::Permute ();
 use Carp qw/croak/;
+use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 my $DEG_IN_SCALE = 12;
 
@@ -187,7 +189,7 @@ sub normal_form {
 
 sub notes2pitches {
   my ( $self, $noteset, $conversion ) = @_;
-  croak "note set must be array ref\n" unless ref $noteset eq 'ARRAY';
+  $noteset = [$noteset] if ref $noteset ne 'ARRAY';
 
   # For lilypond default input, which is what I mostly use, so there.
   if ( !defined $conversion ) {
@@ -222,7 +224,7 @@ sub notes2pitches {
     croak "unknown note '$n'\n" unless exists $conversion->{ lc $n };
     push @pitches, $conversion->{ lc $n };
   }
-  return \@pitches;
+  return @pitches > 1 ? \@pitches : $pitches[0];
 }
 
 sub pitch2intervalclass {
@@ -342,6 +344,24 @@ sub set_complex {
   }
 
   return \@plex;
+}
+
+sub subsets {
+  my ( $self, $pset, $len ) = @_;
+  croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
+  @$pset = uniq @$pset;
+  croak "pitch set must be larger than 1 element" unless @$pset > 1;
+  croak "invalid length" if defined $len and ( $len < 1 or $len > @$pset );
+
+  $len ||= @$pset - 1;
+  my $p = Algorithm::Permute->new( $pset, $len );
+
+  my ( @subsets, %seen );
+  while ( my @res = $p->next ) {
+    @res = sort { $a <=> $b } @res;
+    push @subsets, \@res unless $seen{ join '', @res }++;
+  }
+  return \@subsets;
 }
 
 sub tcis {
@@ -582,6 +602,7 @@ Utility method that converts note names to pitch numbers, and returns an
 arrary reference of the resulting pitch set:
 
   $atu->notes2pitches([qw/c ees g/]);  # returns [0,3,7]
+  $atu->notes2pitches('d');            # returns 2
 
 An optional hash reference can also be supplied, this should contain
 note name keys to pitch number value mappings (note names are lowercased
@@ -627,6 +648,15 @@ reference to the resulting array of arrays.
 
 Ideally the first pitch of the input pitch set should be 0 (so the input
 may need reduction to B<prime_form> first).
+
+=item B<subsets> I<pitch_set> I<optional_length>
+
+Returns the subsets of a given pitch set, of default length one minus
+the magnitude of the input pitch set (that is, whatever two element
+pitch sets exist for a given three element pitch set). The custom length
+allows subsets of 1 <= len <= magnitude_of_pitch_set results to be
+returned, for example three element pitch subsets of a given five
+element pitch set.
 
 =item B<tcs> I<pitch_set>
 
