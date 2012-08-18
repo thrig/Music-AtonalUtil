@@ -8,7 +8,7 @@ use Algorithm::Permute ();
 use Carp qw/croak/;
 use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 my $DEG_IN_SCALE = 12;
 
@@ -358,8 +358,7 @@ sub subsets {
 
   my ( @subsets, %seen );
   while ( my @res = $p->next ) {
-    @res = sort { $a <=> $b } @res;
-    push @subsets, \@res unless $seen{ join '', @res }++;
+    push @subsets, \@res unless $seen{ join '', sort { $a <=> $b } @res }++;
   }
   return \@subsets;
 }
