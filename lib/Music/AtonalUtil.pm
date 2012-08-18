@@ -657,6 +657,9 @@ allows subsets of 1 <= len <= magnitude_of_pitch_set results to be
 returned, for example three element pitch subsets of a given five
 element pitch set.
 
+The underlying permutation library might sort or otherwise return the
+results in arbitrary orderings. Sorry about that.
+
 =item B<tcs> I<pitch_set>
 
 Returns array reference consisting of the transposition common-tone
