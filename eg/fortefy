@@ -1,7 +1,9 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Permute all the pitch sets and tally up resulting counts on prime form
-# and ic vector renditions of said pitch sets.
+# and ic vector renditions of said pitch sets. (A modification of this
+# would be to save all the results to a database, so that all the data
+# is around to query, but that would be more work.)
 
 use strict;
 use warnings;
