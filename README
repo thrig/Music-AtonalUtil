@@ -15,7 +15,8 @@ http://github.com/thrig/Music-AtonalUtil
 
 DEPENDENCIES
 
-None at this time.
+Some knowledge of atonality may well benefit the user. See Makefile.PL
+for module dependencies.
 
 COPYRIGHT AND LICENCE
 
