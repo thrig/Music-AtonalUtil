@@ -321,6 +321,8 @@ sub rotate {
   return \@rot;
 }
 
+# XXX probably should disallow changing this on the fly, esp. if allow
+# method chaining, as it could throw off results in wacky ways.
 sub scale_degrees {
   my ( $self, $dis ) = @_;
   if ( defined $dis ) {
