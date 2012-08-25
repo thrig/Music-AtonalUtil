@@ -501,6 +501,9 @@ Warning! There may be errors due to misunderstanding of atonal theory by
 the autodidactic author. If in doubt, compare the results of this code
 with other material available.
 
+Warning! The interface may change in the future (e.g. more OOish, so can
+do things like ->foo->bar->as_string and the like).
+
 =head1 METHODS
 
 By default, a 12-tone system is assumed. Input values are (often) not
@@ -567,6 +570,14 @@ This vector is also known as a pitch-class interval (PIC) vector or
 absolute pitch-class interval (APIC) vector:
 
 https://en.wikipedia.org/wiki/Interval_vector
+
+Uses include an indication of invarience under transposition; for
+example, [0,3,6] has the icc of 002001. This means two pitches will not
+vary under transposition by 3, and one pitch will not vary under
+transposition by 6:
+
+  [0,3,6] -> T(3) -> [3,6,9]  # shares 3,6 with original
+  [0,3,6] -> T(6) -> [6,9,0]  # shares 0 with original
 
 =item B<invariance_matrix> I<pitch_set>
 
@@ -720,6 +731,8 @@ associated mistakes in understanding thereof by the author.
 
 =head1 SEE ALSO
 
+Reference and learning material:
+
 =over 4
 
 =item *
@@ -735,6 +748,10 @@ http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/
 =item *
 
 Musimathics, Vol. 1, p.311-317
+
+=item *
+
+The Structure of Atonal Music by Allen Forte.
 
 =item *
 
