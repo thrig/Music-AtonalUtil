@@ -62,17 +62,16 @@ sub complement {
 sub interval_class_content {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain at least two elements\n" if @$pset < 2;
 
-  my %seen;
-  @$pset = sort { $a <=> $b } grep { !$seen{$_}++ } @$pset;
+  my @nset = sort { $a <=> $b } uniq @$pset;
+  croak "pitch set must contain at least two elements\n" if @nset < 2;
 
   my %icc;
-  for my $i ( 1 .. $#$pset ) {
+  for my $i ( 1 .. $#nset ) {
     for my $j ( 0 .. $i - 1 ) {
       $icc{
         $self->pitch2intervalclass(
-          ( $pset->[$i] - $pset->[$j] ) % $self->{_DEG_IN_SCALE}
+          ( $nset[$i] - $nset[$j] ) % $self->{_DEG_IN_SCALE}
         )
         }++;
     }
@@ -130,58 +129,54 @@ sub normal_form {
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
-  my %seen;
-  @$pset = sort { $a <=> $b } grep { !$seen{$_}++ } @$pset;
+  my @nset = sort { $a <=> $b } uniq @$pset;
+
+  return \@nset if @nset == 1;
+
+  my $equivs = $self->circular_permute( \@nset );
+  my @order  = 1 .. $#nset;
+  if ( $self->{_packing} eq 'right' ) {
+    @order = reverse @order;
+  } elsif ( $self->{_packing} eq 'left' ) {
+    # XXX not sure about this, www.mta.ca instructions not totally
+    # clear on the Forte method, and the 7-z18 (0234589) form
+    # listed there reduces to (0123589). So, blow up until can
+    # figure that out.
+    #      unshift @order, pop @order;
+    die 'left packing method not yet implemented';
+  } else {
+    croak 'unknown packing method (try the "right" one)';
+  }
 
   my @normal;
-  if ( @$pset == 1 ) {
-    @normal = @$pset;
-  } else {
-    my $equivs = $self->circular_permute($pset);
+  for my $i (@order) {
+    my $min_span = $self->{_DEG_IN_SCALE};
+    my @min_span_idx;
 
-    my @order = 1 .. $#$pset;
-    if ( $self->{_packing} eq 'right' ) {
-      @order = reverse @order;
-    } elsif ( $self->{_packing} eq 'left' ) {
-      # XXX not sure about this, www.mta.ca instructions not totally
-      # clear on the Forte method, and the 7-z18 (0234589) form
-      # listed there reduces to (0123589). So, blow up until can
-      # figure that out.
-      #      unshift @order, pop @order;
-      die 'left packing method not yet implemented';
+    for my $eidx ( 0 .. $#$equivs ) {
+      my $span =
+        ( $equivs->[$eidx][$i] - $equivs->[$eidx][0] )
+        % $self->{_DEG_IN_SCALE};
+      if ( $span < $min_span ) {
+        $min_span     = $span;
+        @min_span_idx = $eidx;
+      } elsif ( $span == $min_span ) {
+        push @min_span_idx, $eidx;
+      }
+    }
+
+    if ( @min_span_idx == 1 ) {
+      @normal = @{ $equivs->[ $min_span_idx[0] ] };
+      last;
     } else {
-      croak 'unknown packing method';
+      @$equivs = @{$equivs}[@min_span_idx];
     }
+  }
 
-    for my $i (@order) {
-      my $min_span = $self->{_DEG_IN_SCALE};
-      my @min_span_idx;
-
-      for my $eidx ( 0 .. $#$equivs ) {
-        my $span =
-          ( $equivs->[$eidx][$i] - $equivs->[$eidx][0] )
-          % $self->{_DEG_IN_SCALE};
-        if ( $span < $min_span ) {
-          $min_span     = $span;
-          @min_span_idx = $eidx;
-        } elsif ( $span == $min_span ) {
-          push @min_span_idx, $eidx;
-        }
-      }
-
-      if ( @min_span_idx == 1 ) {
-        @normal = @{ $equivs->[ $min_span_idx[0] ] };
-        last;
-      } else {
-        @$equivs = @{$equivs}[@min_span_idx];
-      }
-    }
-
-    if ( !@normal ) {
-      # nothing unique, pick lowest starting pitch, which is first index
-      # by virtue of the numeric sort performed above.
-      @normal = @{ $equivs->[0] };
-    }
+  if ( !@normal ) {
+    # nothing unique, pick lowest starting pitch, which is first index
+    # by virtue of the numeric sort performed above.
+    @normal = @{ $equivs->[0] };
   }
 
   return \@normal;
@@ -194,26 +189,40 @@ sub notes2pitches {
   # For lilypond default input, which is what I mostly use, so there.
   if ( !defined $conversion ) {
     $conversion = {
-      bis => 0,
-      c   => 0,
-      cis => 1,
-      des => 1,
-      d   => 2,
-      dis => 3,
-      ees => 3,
-      e   => 4,
-      fes => 4,
-      eis => 5,
-      f   => 5,
-      fis => 6,
-      ges => 6,
-      g   => 7,
-      gis => 8,
-      aes => 8,
-      a   => 9,
-      ais => 10,
-      bes => 10,
-      b   => 11,
+      bis   => 0,
+      c     => 0,
+      deses => 0,
+      bisis => 1,
+      cis   => 1,
+      des   => 1,
+      cisis => 2,
+      d     => 2,
+      eeses => 2,
+      dis   => 3,
+      ees   => 3,
+      feses => 3,
+      disis => 4,
+      e     => 4,
+      fes   => 4,
+      eis   => 5,
+      f     => 5,
+      geses => 5,
+      eisis => 6,
+      fis   => 6,
+      ges   => 6,
+      fisis => 7,
+      g     => 7,
+      aeses => 7,
+      gis   => 8,
+      aes   => 8,
+      gisis => 9,
+      a     => 9,
+      beses => 9,
+      ais   => 10,
+      bes   => 10,
+      ceses => 10,
+      aisis => 11,
+      b     => 11,
     };
   } elsif ( ref $conversion ne 'HASH' ) {
     croak "conversion must be hash ref\n";
@@ -349,16 +358,16 @@ sub set_complex {
 sub subsets {
   my ( $self, $pset, $len ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
-  @$pset = uniq @$pset;
-  croak "pitch set must be larger than 1 element" unless @$pset > 1;
-  croak "invalid length" if defined $len and ( $len < 1 or $len > @$pset );
+  my @nset = uniq @$pset;
+  croak "pitch set must be larger than 1 element" unless @nset > 1;
+  croak "invalid length" if defined $len and ( $len < 1 or $len > @nset );
 
-  $len ||= @$pset - 1;
-  my $p = Algorithm::Permute->new( $pset, $len );
+  $len ||= @nset - 1;
+  my $p = Algorithm::Permute->new( \@nset, $len );
 
   my ( @subsets, %seen );
-  while ( my @res = $p->next ) {
-    push @subsets, \@res unless $seen{ join '', sort { $a <=> $b } @res }++;
+  while ( my @res = sort { $a <=> $b } $p->next ) {
+    push @subsets, \@res unless $seen{ join '', @res }++;
   }
   return \@subsets;
 }
