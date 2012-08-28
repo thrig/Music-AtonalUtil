@@ -21,6 +21,7 @@ _atonalutil_mode() {
     'equivs:Tn and TnI equivalents' \
     'interval_class_content:ICC'
     'invariance_matrix:invarience under TnI' \
+    'invariants:list of invariants of a given pitch set' \
     'invert:inversion' \
     'multiply:multiplication' \
     'normal_form:normal_form' \
@@ -78,6 +79,11 @@ _atonalutil_equivs() {
 }
 _atonalutil_interval_class_content() { }
 _atonalutil_invariance_matrix() { }
+_atonalutil_invariants() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+}
 _atonalutil_invert() { 
   _arguments -s \
     '--axis=[inversion axis]:value:( )' \
