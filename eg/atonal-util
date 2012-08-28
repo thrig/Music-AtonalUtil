@@ -16,6 +16,7 @@ my %modes = (
   equivs                 => \&equivs,
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
+  invariants             => \&invariants,
   invert                 => \&invert,
   multiply               => \&multiply,
   normal_form            => \&normal_form,
@@ -171,6 +172,55 @@ sub invariance_matrix {
   my ( $atu, @args ) = @_;
   emit_pitch_set( $atu->invariance_matrix( args2pitchset( $atu, @args ) ),
     lyflag => 0 );
+}
+
+sub invariants {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts );
+  my $ps = args2pitchset( $atu, @args );
+
+  my %seen;
+  @seen{@$ps} = ();
+
+  $Flavor = 'flats' if $Flag_Flat;
+
+  my $icc = scalar $atu->interval_class_content($ps);
+  print '[',
+    join( ' ', map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @$ps ),
+    '] icc ', join( '', @$icc ), "\n";
+
+  my $ps_len = @$ps * ( $Flag_Lyout ? 4 : 2 );
+
+  for my $t ( 1 .. $atu->scale_degrees - 1 ) {
+    my $tps = $atu->transpose( $ps, $t );
+    my @t_invary;
+    for my $p (@$tps) {
+      push @t_invary, $p if exists $seen{$p};
+    }
+    if (@t_invary) {
+      printf "%-5s [ %-${ps_len}s ] %s [ %-${ps_len}s ]\n", "T  $t",
+        join( ' ', map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @$tps ),
+        'invars',
+        join( ' ',
+        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @t_invary );
+
+    }
+  }
+
+  for my $t ( 1 .. $atu->scale_degrees - 1 ) {
+    my $ips = $atu->transpose_invert( $ps, $t );
+    my @i_invary;
+    for my $p (@$ips) {
+      push @i_invary, $p if exists $seen{$p};
+    }
+    if (@i_invary) {
+      printf "%-5s [ %-${ps_len}s ] %s [ %-${ps_len}s ]\n", "Ti $t",
+        join( ' ', map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @$ips ),
+        'invars',
+        join( ' ',
+        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @i_invary );
+    }
+  }
 }
 
 sub invert {
@@ -468,6 +518,12 @@ See L<Music::AtonalUtil>.
 =item B<invariance_matrix>
 
 See L<Music::AtonalUtil>.
+
+=item B<invariants>
+
+Returns list of B<transpose> or B<transpose_invert> operations that have
+invariant pitches with the supplied pitch set, along with which pitches
+have not varied.
 
 =item B<invert> I<--axis=inversion_axis>
 
