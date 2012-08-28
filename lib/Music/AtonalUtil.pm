@@ -573,20 +573,16 @@ absolute pitch-class interval (APIC) vector:
 
 https://en.wikipedia.org/wiki/Interval_vector
 
-Uses include an indication of invarience under transposition; for
-example, [0,3,6] has the icc of 002001. This means two pitches will not
-vary under transposition by 3, and one pitch will not vary under
-transposition by 6:
-
-  [0,3,6] -> T(3) -> [3,6,9]  # shares 3,6 with original
-  [0,3,6] -> T(6) -> [6,9,0]  # shares 0 with original
+Uses include an indication of invarience under transposition; see
+the B<invariants> mode of C<eg/atonal-util> for the display of
+invariant pitches.
 
 =item B<invariance_matrix> I<pitch_set>
 
 Returns reference to an array of references that comprise the invarience
-under Transpose(N)Inversion operations on the given pitch set. (With
-code, probably easier to iterate through all the T and T(N)I operations
-than learn how to read this table.)
+under Transpose(N)Inversion operations on the given pitch set. Probably
+easier to use the B<invariants> mode of C<eg/atonal-util> or use
+equivalent code.
 
 =item B<invert> I<pitch_set> I<optional_axis>
 
@@ -753,7 +749,7 @@ Musimathics, Vol. 1, p.311-317
 
 =item *
 
-The Structure of Atonal Music by Allen Forte.
+"The Structure of Atonal Music" by Allen Forte.
 
 =item *
 
