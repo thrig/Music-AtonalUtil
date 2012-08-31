@@ -13,6 +13,8 @@ local::lib, or snag the module from:
 
 http://github.com/thrig/Music-AtonalUtil
 
+and install via `cpanm .`
+
 DEPENDENCIES
 
 Some knowledge of atonality may well benefit the user. See Makefile.PL
