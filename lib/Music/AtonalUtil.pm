@@ -223,6 +223,7 @@ sub notes2pitches {
       ceses => 10,
       aisis => 11,
       b     => 11,
+      ces   => 11,
     };
   } elsif ( ref $conversion ne 'HASH' ) {
     croak "conversion must be hash ref\n";
