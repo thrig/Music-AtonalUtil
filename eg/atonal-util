@@ -394,7 +394,7 @@ The following require two pitch sets; specify the pitch sets on STDIN
   zrelation        Emits 1 if pitch sets zrelated, 0 if not.
 
 Example:
-  (echo 0 1 3 7; echo 0 1 4 6) | $0 zrelation
+  (echo 0,1,3,7; echo 0,1,4,6) | $0 zrelation
 
 There is also a 'basic' mode that computes both the prime form and
 interval class content of the input pitch set:
