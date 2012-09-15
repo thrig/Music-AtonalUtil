@@ -7,6 +7,7 @@ use strict;
 use warnings;
 
 use Getopt::Long qw/GetOptions GetOptionsFromArray/;
+use List::MoreUtils qw/all uniq/;
 use Music::AtonalUtil;
 
 my %modes = (
@@ -14,6 +15,7 @@ my %modes = (
   circular_permute       => \&circular_permute,
   complement             => \&complement,
   equivs                 => \&equivs,
+  findin                 => \&findin,
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
   invariants             => \&invariants,
@@ -135,6 +137,42 @@ sub equivs {
 
   emit_pitch_set( \@transpose );
   emit_pitch_set( \@transpose_invert );
+}
+
+sub findin {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts, 'pitchset|P=s' => \my $base_input,
+  );
+  $Flavor = 'flats' if $Flag_Flat;
+
+  my $ps_base = args2pitchset( $atu, split /[ ,]/, $base_input );
+  my $desired = args2pitchset( $atu, @args );
+
+  if ( @$desired > @$ps_base ) {
+    die "cannot desire more than is present\n";
+  }
+
+  for my $i ( 0 .. $atu->scale_degrees - 1 ) {
+    my %tps;
+    @tps{ @{ $atu->transpose( $ps_base, $i ) } } = ();
+    if ( all { exists $tps{$_} } @$desired ) {
+      print "T($i)\t",
+        join( ',',
+        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ }
+          uniq( @$desired, keys %tps ) ),
+        "\n";
+    }
+
+    my %ips;
+    @ips{ @{ $atu->transpose_invert( $ps_base, $i ) } } = ();
+    if ( all { exists $ips{$_} } @$desired ) {
+      print "Ti($i)\t",
+        join( ',',
+        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ }
+          uniq( @$desired, keys %ips ) ),
+        "\n";
+    }
+  }
 }
 
 sub emit_pitch_set {
@@ -502,6 +540,16 @@ See L<Music::AtonalUtil>.
 
 Equivalents under transposition and inverse transposition. An optional
 axis of inversion (default: 0, though some forms use 6) can be supplied.
+
+=item B<findin> I<-P base_pitch_set> I<pitches>
+
+Answers questions such as, given a base pitch set of C<[0,3,7]>, and the
+notes d and bes, what pitch sets (via any B<transpose> or
+B<transpose_invert> operation) complete the base pitch set:
+
+  $ atonal-util findin --ly --flats -P 0,3,7 d bes
+  Ti(5) d,bes,f
+  T(7)  d,bes,g
 
 =item B<interval_class_content>
 
