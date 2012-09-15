@@ -19,6 +19,7 @@ _atonalutil_mode() {
     'circular_permute:all permutations of pitch set'
     'complement:complement of set'
     'equivs:Tn and TnI equivalents' \
+    'findin:find pitch sets satisfying a base set' \
     'interval_class_content:ICC'
     'invariance_matrix:invarience under TnI' \
     'invariants:list of invariants of a given pitch set' \
@@ -76,6 +77,12 @@ _atonalutil_equivs() {
   _arguments -s \
     '--flats[print notes as flats]' \
     '--ly[emit notes not pitch numbers]'
+}
+_atonalutil_findin() {
+  _arguments -s \
+    '--flats[print notes as flats]' \
+    '--ly[emit notes not pitch numbers]'
+    '--pitchset=[base pitch set]:ps:'
 }
 _atonalutil_interval_class_content() { }
 _atonalutil_invariance_matrix() { }
