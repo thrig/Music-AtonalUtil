@@ -8,7 +8,7 @@ use Algorithm::Permute ();
 use Carp qw/croak/;
 use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 my $DEG_IN_SCALE = 12;
 
@@ -616,8 +616,8 @@ information to verify if that code is correct.
 
 =item B<notes2pitches> I<note_set> I<optional_conversion_hashref>
 
-Utility method that converts note names to pitch numbers, and returns an
-arrary reference of the resulting pitch set:
+Utility method that converts (by default lilypond) note names to pitch
+numbers, and returns an arrary reference of the resulting pitch set:
 
   $atu->notes2pitches([qw/c ees g/]);  # returns [0,3,7]
   $atu->notes2pitches('d');            # returns 2
@@ -755,6 +755,10 @@ Musimathics, Vol. 1, p.311-317
 =item *
 
 L<Music::Chord::Positions> for a more tonal module.
+
+=item *
+
+http://lilypond.org/ for documentation on the default note name syntax used by various routines.
 
 =back
 
