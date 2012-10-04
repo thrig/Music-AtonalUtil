@@ -281,7 +281,7 @@ sub pitches2notes {
   for my $p (@$pset) {
     croak "unknown pitch '$p'\n"
       unless exists $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} };
-    push @notes, $conversion->{$flavor}->{$p};
+    push @notes, $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} };
   }
   return @notes > 1 ? \@notes : $notes[0];
 }
