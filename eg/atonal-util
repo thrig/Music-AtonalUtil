@@ -37,14 +37,6 @@ my %modes = (
   zrelation              => \&zrelation,
 );
 
-my %pitch2ly = (
-  'sharps' =>
-    {qw/0 c 1 cis 2 d 3 dis 4 e 5 f 6 fis 7 g 8 gis 9 a 10 ais 11 b/},
-  'flats' =>
-    {qw/0 c 1 des 2 d 3 ees 4 e 5 f 6 ges 7 g 8 aes 9 a 10 bes 11 b/},
-);
-my $Flavor = 'sharps';
-
 my ( $Flag_Flat, $Flag_Lyout );
 my @Std_Opts = (
   'flats' => \$Flag_Flat,
@@ -67,7 +59,10 @@ $scale_degrees //= Music::AtonalUtil->new->scale_degrees();
 my $mode = shift;
 
 print_help() if !defined $mode || !exists $modes{$mode};
-my $atu = Music::AtonalUtil->new( DEG_IN_SCALE => $scale_degrees );
+my $atu = Music::AtonalUtil->new(
+  DEG_IN_SCALE => $scale_degrees,
+  P2N_STYLE    => ( $Flag_Flat ? 'flats' : 'sharps' ),
+);
 
 $modes{$mode}->( $atu, @ARGV );
 exit 0;
@@ -100,28 +95,36 @@ sub args2pitchset {
 
 sub basic {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+
+  emit_pitch_set( $atu, $atu->prime_form( args2pitchset( $atu, @args ) ) );
   emit_pitch_set(
+    $atu,
     scalar $atu->interval_class_content( args2pitchset( $atu, @args ) ),
-    lyflag => 0 );
+    lyflag => 0
+  );
 }
 
 sub circular_permute {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->circular_permute( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu,
+    $atu->circular_permute( args2pitchset( $atu, @args ) ) );
 }
 
 sub complement {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->complement( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, $atu->complement( args2pitchset( $atu, @args ) ) );
 }
 
 sub equivs {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
 
   my ( @transpose, @transpose_invert, %seen );
   my $pset = args2pitchset( $atu, @args );
@@ -135,15 +138,15 @@ sub equivs {
     }
   }
 
-  emit_pitch_set( \@transpose );
-  emit_pitch_set( \@transpose_invert );
+  emit_pitch_set( $atu, \@transpose );
+  emit_pitch_set( $atu, \@transpose_invert );
 }
 
 sub findin {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'pitchset|P=s' => \my $base_input,
-  );
-  $Flavor = 'flats' if $Flag_Flat;
+  GetOptionsFromArray( \@args, @Std_Opts, 'pitchset|P=s' => \my $base_input, )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
 
   my $ps_base = args2pitchset( $atu, split /[ ,]/, $base_input );
   my $desired = args2pitchset( $atu, @args );
@@ -156,37 +159,36 @@ sub findin {
     my %tps;
     @tps{ @{ $atu->transpose( $ps_base, $i ) } } = ();
     if ( all { exists $tps{$_} } @$desired ) {
-      print "T($i)\t",
-        join( ',',
-        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ }
-          uniq( @$desired, keys %tps ) ),
-        "\n";
+      my @pitches = uniq( @$desired, keys %tps );
+      if ($Flag_Lyout) {
+        @pitches = @{ $atu->pitches2notes( \@pitches ) };
+      }
+      print "T($i)\t", join( ',', @pitches ), "\n";
     }
 
     my %ips;
     @ips{ @{ $atu->transpose_invert( $ps_base, $i ) } } = ();
     if ( all { exists $ips{$_} } @$desired ) {
-      print "Ti($i)\t",
-        join( ',',
-        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ }
-          uniq( @$desired, keys %ips ) ),
-        "\n";
+      my @pitches = uniq( @$desired, keys %ips );
+      if ($Flag_Lyout) {
+        @pitches = @{ $atu->pitches2notes( \@pitches ) };
+      }
+      print "Ti($i)\t", join( ',', @pitches ), "\n";
     }
   }
 }
 
 sub emit_pitch_set {
-  my ( $pset, %params ) = @_;
+  my ( $atu, $pset, %params ) = @_;
 
   my $lyify = exists $params{lyflag} ? $params{lyflag} : $Flag_Lyout;
-  $Flavor = 'flats' if $Flag_Flat;
 
   my $has_nl = 0;
   for my $i (@$pset) {
     if ( ref $i eq 'ARRAY' ) {
-      $has_nl = emit_pitch_set( $i, %params );
+      $has_nl = emit_pitch_set( $atu, $i, %params );
     } else {
-      print( $lyify ? $pitch2ly{$Flavor}{$i} : $i, " " );
+      print( $lyify ? $atu->pitches2notes($i) : $i, " " );
     }
   }
   print "\n" unless $has_nl;
@@ -196,29 +198,33 @@ sub emit_pitch_set {
 sub interval_class_content {
   my ( $atu, @args ) = @_;
   emit_pitch_set(
+    $atu,
     scalar $atu->interval_class_content( args2pitchset( $atu, @args ) ),
-    lyflag => 0 );
+    lyflag => 0
+  );
 }
 
 sub invariance_matrix {
   my ( $atu, @args ) = @_;
-  emit_pitch_set( $atu->invariance_matrix( args2pitchset( $atu, @args ) ),
-    lyflag => 0 );
+  emit_pitch_set(
+    $atu,
+    $atu->invariance_matrix( args2pitchset( $atu, @args ) ),
+    lyflag => 0
+  );
 }
 
 sub invariants {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   my $ps = args2pitchset( $atu, @args );
 
   my %seen;
   @seen{@$ps} = ();
 
-  $Flavor = 'flats' if $Flag_Flat;
-
   my $icc = scalar $atu->interval_class_content($ps);
   print '[',
-    join( ' ', map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @$ps ),
+    join( ' ', map { $Flag_Lyout ? $atu->pitches2notes($_) : $_ } @$ps ),
     '] icc ', join( '', @$icc ), "\n";
 
   my $ps_len = @$ps * ( $Flag_Lyout ? 4 : 2 );
@@ -231,10 +237,10 @@ sub invariants {
     }
     if (@t_invary) {
       printf "%-5s [ %-${ps_len}s ] %s [ %-${ps_len}s ]\n", "T  $t",
-        join( ' ', map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @$tps ),
+        join( ' ', map { $Flag_Lyout ? $atu->pitches2notes($_) : $_ } @$tps ),
         'invars',
         join( ' ',
-        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @t_invary );
+        map { $Flag_Lyout ? $atu->pitches2notes($_) : $_ } @t_invary );
 
     }
   }
@@ -247,37 +253,44 @@ sub invariants {
     }
     if (@i_invary) {
       printf "%-5s [ %-${ps_len}s ] %s [ %-${ps_len}s ]\n", "Ti $t",
-        join( ' ', map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @$ips ),
+        join( ' ', map { $Flag_Lyout ? $atu->pitches2notes($_) : $_ } @$ips ),
         'invars',
         join( ' ',
-        map { $Flag_Lyout ? $pitch2ly{$Flavor}{$_} : $_ } @i_invary );
+        map { $Flag_Lyout ? $atu->pitches2notes($_) : $_ } @i_invary );
     }
   }
 }
 
 sub invert {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'axis|n=s' => \my $axis, );
+  GetOptionsFromArray( \@args, @Std_Opts, 'axis|n=s' => \my $axis, )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   $axis //= 0;
-  emit_pitch_set( $atu->invert( args2pitchset( $atu, @args ), $axis ) );
+  emit_pitch_set( $atu, $atu->invert( args2pitchset( $atu, @args ), $axis ) );
 }
 
 sub multiply {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'factor|n=s' => \my $factor, );
+  GetOptionsFromArray( \@args, @Std_Opts, 'factor|n=s' => \my $factor, )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   $factor //= 1;
-  emit_pitch_set( $atu->multiply( args2pitchset( $atu, @args ), $factor ) );
+  emit_pitch_set( $atu,
+    $atu->multiply( args2pitchset( $atu, @args ), $factor ) );
 }
 
 sub normal_form {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->normal_form( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, $atu->normal_form( args2pitchset( $atu, @args ) ) );
 }
 
 sub pitch2intervalclass {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   die "$0 pitch2intervalclass pitch\n"
     unless defined $args[0] and $args[0] =~ m/^\d+$/;
   print $atu->pitch2intervalclass( $args[0] );
@@ -285,13 +298,16 @@ sub pitch2intervalclass {
 
 sub prime_form {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->prime_form( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, $atu->prime_form( args2pitchset( $atu, @args ) ) );
 }
 
 sub recipe {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'file=s' => \my $rfile );
+  GetOptionsFromArray( \@args, @Std_Opts, 'file=s' => \my $rfile )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
 
   my $ps = args2pitchset( $atu, @args );
   my $wps = [@$ps];
@@ -309,32 +325,38 @@ sub recipe {
     chomp $@;
     die "recipe error at '$rfile' line $.: $@\n";
   }
-  emit_pitch_set($wps);
+  emit_pitch_set( $atu, $wps );
 }
 
 sub retrograde {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->retrograde( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, $atu->retrograde( args2pitchset( $atu, @args ) ) );
 }
 
 sub rotate {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'rotate|n=s' => \my $r, );
+  GetOptionsFromArray( \@args, @Std_Opts, 'rotate|n=s' => \my $r, )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   $r //= 0;
-  emit_pitch_set( $atu->rotate( args2pitchset( $atu, @args ), $r ) );
+  emit_pitch_set( $atu, $atu->rotate( args2pitchset( $atu, @args ), $r ) );
 }
 
 sub set_complex {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( $atu->set_complex( args2pitchset( $atu, @args ) ) );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, $atu->set_complex( args2pitchset( $atu, @args ) ) );
 }
 
 sub subsets {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'length|len=i' => \my $l, );
-  emit_pitch_set( $atu->subsets( args2pitchset( $atu, @args ), $l ) );
+  GetOptionsFromArray( \@args, @Std_Opts, 'length|len=i' => \my $l, )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, $atu->subsets( args2pitchset( $atu, @args ), $l ) );
 }
 
 sub stdin2pitchsets {
@@ -359,19 +381,29 @@ sub stdin2pitchsets {
 
 sub tcs {
   my ( $atu, @args ) = @_;
-  emit_pitch_set( $atu->tcs( args2pitchset( $atu, @args ) ), lyflag => 0 );
+  emit_pitch_set(
+    $atu,
+    $atu->tcs( args2pitchset( $atu, @args ) ),
+    lyflag => 0
+  );
 }
 
 sub tcis {
   my ( $atu, @args ) = @_;
-  emit_pitch_set( $atu->tcis( args2pitchset( $atu, @args ) ), lyflag => 0 );
+  emit_pitch_set(
+    $atu,
+    $atu->tcis( args2pitchset( $atu, @args ) ),
+    lyflag => 0
+  );
 }
 
 sub transpose {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts, 'transpose|n=s' => \my $t, );
+  GetOptionsFromArray( \@args, @Std_Opts, 'transpose|n=s' => \my $t, )
+    || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   $t //= 0;
-  emit_pitch_set( $atu->transpose( args2pitchset( $atu, @args ), $t ) );
+  emit_pitch_set( $atu, $atu->transpose( args2pitchset( $atu, @args ), $t ) );
 }
 
 sub transpose_invert {
@@ -380,23 +412,28 @@ sub transpose_invert {
     \@args, @Std_Opts,
     'axis|a=s'      => \my $axis,
     'transpose|t=s' => \my $t,
-  );
+  ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
   $axis //= 0;
   $t    //= 0;
-  emit_pitch_set(
+  emit_pitch_set( $atu,
     $atu->transpose_invert( args2pitchset( $atu, @args ), $t, $axis ) );
 }
 
 sub variances {
   my ( $atu, @args ) = @_;
-  GetOptionsFromArray( \@args, @Std_Opts );
-  emit_pitch_set( [ $atu->variances( @{ stdin2pitchsets($atu) } ) ] );
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+  $atu->pitch2note_style('flats') if $Flag_Flat;
+  emit_pitch_set( $atu, [ $atu->variances( @{ stdin2pitchsets($atu) } ) ] );
 }
 
 sub zrelation {
   my ($atu) = @_;
-  emit_pitch_set( [ $atu->zrelation( @{ stdin2pitchsets($atu) } ) ],
-    lyflag => 0 );
+  emit_pitch_set(
+    $atu,
+    [ $atu->zrelation( @{ stdin2pitchsets($atu) } ) ],
+    lyflag => 0
+  );
 }
 
 sub print_help {

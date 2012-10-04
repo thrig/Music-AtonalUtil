@@ -28,6 +28,8 @@ sub new {
   # XXX packing not implemented beyond "right" method (via www.mta.ca docs)
   $self->{_packing} = $param{PACKING} // 'right';
 
+  $self->{_p2n_flavor} = $param{P2N_STYLE} // 'sharps';
+
   bless $self, $class;
   return $self;
 }
@@ -246,6 +248,42 @@ sub pitch2intervalclass {
   return $pitch > int( $self->{_DEG_IN_SCALE} / 2 )
     ? $self->{_DEG_IN_SCALE} - $pitch
     : $pitch;
+}
+
+sub pitch2note_style {
+  my ( $self, $flavor ) = @_;
+  $self->{_p2n_flavor} = $flavor if defined $flavor;
+  return $self->{_p2n_flavor};
+}
+
+# TODO no concept of registers, would be nice to kick back some
+# indication of register for pitch<0 or pitch>DIS.
+sub pitches2notes {
+  my ( $self, $pset, $flavor, $conversion ) = @_;
+  $pset = [$pset] if ref $pset ne 'ARRAY';
+  $flavor //= $self->{_p2n_flavor};
+
+  if ( !defined $conversion ) {
+    $conversion = {
+      'sharps' =>
+        {qw/0 c 1 cis 2 d 3 dis 4 e 5 f 6 fis 7 g 8 gis 9 a 10 ais 11 b/},
+      'flats' =>
+        {qw/0 c 1 des 2 d 3 ees 4 e 5 f 6 ges 7 g 8 aes 9 a 10 bes 11 b/},
+    };
+  } elsif ( ref $conversion ne 'HASH' ) {
+    croak "conversion must be hash of hash ref\n";
+  }
+  if ( !exists $conversion->{$flavor} ) {
+    croak "unknown pitch to note style\n";
+  }
+
+  my @notes;
+  for my $p (@$pset) {
+    croak "unknown pitch '$p'\n"
+      unless exists $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} };
+    push @notes, $conversion->{$flavor}->{$p};
+  }
+  return @notes > 1 ? \@notes : $notes[0];
 }
 
 # Forte has names for prime forms (3-1 and suchlike) though these do not
@@ -541,6 +579,12 @@ or some other positive integer greater than one, to use a non-12-tone
 basis for subsequent method calls. This value can be set or inspected
 via the B<scale_degrees> call.
 
+The B<pitches2notes> style can also be set here:
+
+  Music::AtonalUtil->new(P2N_STYLE => 'flats');
+
+or via the B<pitch2note_style> method.
+
 =item B<circular_permute> I<pitch_set>
 
 Takes a pitch set, returns an array reference of pitch set references:
@@ -624,13 +668,25 @@ numbers, and returns an arrary reference of the resulting pitch set:
 
 An optional hash reference can also be supplied, this should contain
 note name keys to pitch number value mappings (note names are lowercased
-in the code prior to lookup).
+in the code prior to lookup). See B<pitches2notes> for the reverse
+operation.
 
 =item B<pitch2intervalclass> I<pitch>
 
 Returns the interval class a given pitch belongs to (0 is 0, 11 maps
 down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
 system). Used internally by the B<interval_class_content> method.
+
+=item B<pitch2note_style> I<style>
+
+Returns (or with argument also sets) the default B<pitches2notes> style,
+currently either C<sharps> or C<flats>, to emit chromatics as either all
+sharps or flats.
+
+=item B<pitches2notes> I<pitch_set>
+
+Converts pitch numbers to lilypond note names. See B<notes2pitches> for
+the reverse operation.
 
 =item B<prime_form> I<pitch_set>
 
