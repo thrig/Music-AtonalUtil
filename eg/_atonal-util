@@ -81,7 +81,7 @@ _atonalutil_equivs() {
 _atonalutil_findin() {
   _arguments -s \
     '--flats[print notes as flats]' \
-    '--ly[emit notes not pitch numbers]'
+    '--ly[emit notes not pitch numbers]' \
     '--pitchset=[base pitch set]:ps:'
 }
 _atonalutil_interval_class_content() { }
