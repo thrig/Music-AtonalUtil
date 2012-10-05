@@ -8,7 +8,7 @@ use Algorithm::Permute ();
 use Carp qw/croak/;
 use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 my $DEG_IN_SCALE = 12;
 
@@ -226,6 +226,7 @@ sub notes2pitches {
       aisis => 11,
       b     => 11,
       ces   => 11,
+      r     => undef,
     };
   } elsif ( ref $conversion ne 'HASH' ) {
     croak "conversion must be hash ref\n";
@@ -257,7 +258,8 @@ sub pitch2note_style {
 }
 
 # TODO no concept of registers, would be nice to kick back some
-# indication of register for pitch<0 or pitch>DIS.
+# indication of register for pitch<0 or pitch>DIS, or really have a
+# "note" or somesuch object that could be a note, or a rest, etc.
 sub pitches2notes {
   my ( $self, $pset, $flavor, $conversion ) = @_;
   $pset = [$pset] if ref $pset ne 'ARRAY';
@@ -279,9 +281,8 @@ sub pitches2notes {
 
   my @notes;
   for my $p (@$pset) {
-    croak "unknown pitch '$p'\n"
-      unless exists $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} };
-    push @notes, $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} };
+    push @notes,
+      $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} } || undef;
   }
   return @notes > 1 ? \@notes : $notes[0];
 }
