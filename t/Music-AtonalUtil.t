@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 41;
+use Test::More tests => 46;
 
 ########################################################################
 #
@@ -29,6 +29,9 @@ is_deeply(
   [ 6, 7, 8, 9, 10, 11 ],
   'pitch set complement'
 );
+
+is_deeply( [ 0, 1, 2, 5, 6, 9 ], $atu->forte2pcs('6-Z44'), 'Forte to PCS1' );
+is_deeply( [ 0, 1, 2, 5, 6, 9 ], $atu->forte2pcs('6-z44'), 'Forte to PCS2' );
 
 is_deeply(
   scalar $atu->interval_class_content( [ 0, 2, 4 ] ),
@@ -89,6 +92,10 @@ is_deeply(
 );
 
 is( $atu->notes2pitches('d'), 2, 'notes2pitches single note' );
+
+is( $atu->pcs2forte('0,1,3,4,7,8'),   '6-z19', 'PCS string to Forte 1' );
+is( $atu->pcs2forte('[0,1,3,4,7,8]'), '6-z19', 'PCS string to Forte 2' );
+is( $atu->pcs2forte( [ 0, 1, 3, 4, 7, 8 ] ), '6-z19', 'PCS to Forte 1' );
 
 is( $atu->pitch2intervalclass(0),  0, 'pitch2intervalclass 0' );
 is( $atu->pitch2intervalclass(1),  1, 'pitch2intervalclass 1' );
