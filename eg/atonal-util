@@ -16,12 +16,14 @@ my %modes = (
   complement             => \&complement,
   equivs                 => \&equivs,
   findin                 => \&findin,
+  forte2pcs              => \&forte2pcs,
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
   invariants             => \&invariants,
   invert                 => \&invert,
   multiply               => \&multiply,
   normal_form            => \&normal_form,
+  pcs2forte              => \&pcs2forte,
   pitch2intervalclass    => \&pitch2intervalclass,
   prime_form             => \&prime_form,
   recipe                 => \&recipe,
@@ -178,6 +180,13 @@ sub findin {
   }
 }
 
+sub forte2pcs {
+  my ( $atu, @args ) = @_;
+  GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
+
+  emit_pitch_set( $atu, $atu->forte2pcs( $args[0] ) );
+}
+
 sub emit_pitch_set {
   my ( $atu, $pset, %params ) = @_;
 
@@ -285,6 +294,12 @@ sub normal_form {
   GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
   $atu->pitch2note_style('flats') if $Flag_Flat;
   emit_pitch_set( $atu, $atu->normal_form( args2pitchset( $atu, @args ) ) );
+}
+
+sub pcs2forte {
+  my ( $atu, @args ) = @_;
+  my $fn = $atu->pcs2forte( args2pitchset( $atu, @args ) ) || "";
+  print $fn, "\n";
 }
 
 sub pitch2intervalclass {
