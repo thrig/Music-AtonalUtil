@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 46;
+use Test::More tests => 47;
 
 ########################################################################
 #
@@ -96,6 +96,7 @@ is( $atu->notes2pitches('d'), 2, 'notes2pitches single note' );
 is( $atu->pcs2forte('0,1,3,4,7,8'),   '6-z19', 'PCS string to Forte 1' );
 is( $atu->pcs2forte('[0,1,3,4,7,8]'), '6-z19', 'PCS string to Forte 2' );
 is( $atu->pcs2forte( [ 0, 1, 3, 4, 7, 8 ] ), '6-z19', 'PCS to Forte 1' );
+is( $atu->pcs2forte( [qw/6 5 4 1 0 9/] ), '6-z44', 'PCS to Forte 2' );
 
 is( $atu->pitch2intervalclass(0),  0, 'pitch2intervalclass 0' );
 is( $atu->pitch2intervalclass(1),  1, 'pitch2intervalclass 1' );

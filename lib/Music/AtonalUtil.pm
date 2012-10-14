@@ -573,6 +573,10 @@ sub normal_form {
     # listed there reduces to (0123589). So, blow up until can
     # figure that out.
     #      unshift @order, pop @order;
+    # Also, the inclusion of http://en.wikipedia.org/wiki/Forte_number
+    # plus a prime_form call on those pitch sets shows no changes caused
+    # by the default 'right' packing method, so sticking with it until
+    # learn otherwise.
     die 'left packing method not yet implemented';
   } else {
     croak 'unknown packing method (try the "right" one)';
@@ -671,11 +675,20 @@ sub notes2pitches {
 sub pcs2forte {
   my ( $self, $pset ) = @_;
 
-  # TODO but first get prime_form?
+  if (!ref $pset) {
+    my @pitches = $pset =~ m/(\d+)/g;
+    for my $p (@pitches) {
+      $p %= $self->{_DEG_IN_SCALE};
+    }
+    $pset = \@pitches;
+  }
+
   if ( ref $pset eq 'ARRAY' ) {
+    croak "pitch set must contain something\n" if !@$pset;
+    $pset = $self->prime_form($pset);
     $pset = join ',', @$pset;
   } else {
-    $pset =~ tr/[]//d;
+    croak "pitch set must be array ref or string\n";
   }
 
   return $PCS2FORTE->{$pset};
@@ -1121,16 +1134,15 @@ operation.
 
 =item B<pcs2forte> I<pitch_set>
 
-Given a pitch set, returns the Forte Number of that set. No
-conversion is done, so the pitch set must exactly match what is in
-the lookup table.
+Given a pitch set, returns the Forte Number of that set.
 
   $atu->pcs2forte([qw/0 1 2 5 6 9/]);  # array ref form
 
   $atu->pcs2forte('[0,1,2,5,6,9]');    # string forms are okay
   $atu->pcs2forte('0,1,2,5,6,9');      # as well
 
-The Forte Numbers use lowercase C<z>, for example C<6-z44>.
+The Forte Numbers use lowercase C<z>, for example C<6-z44>. An undefined
+value will be returned if no Forte Number exists for the pitch set.
 
 =item B<pitch2intervalclass> I<pitch>
 
