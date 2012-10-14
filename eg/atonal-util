@@ -82,12 +82,17 @@ sub args2pitchset {
   }
 
   my $pitch_set;
-  for my $arg (@args) {
-    for my $p ( $arg =~ /([\d\w]+)/g ) {
-      if ( $p =~ m/^\d+/ ) {
-        push @$pitch_set, $p % $dis;
-      } else {
-        push @$pitch_set, $atu->notes2pitches($p);
+  if ( $args[0] =~ m/\d-/ ) {
+    $pitch_set = $atu->forte2pcs( $args[0] );
+    die "unknown Forte Number\n" if !@$pitch_set;
+  } else {
+    for my $arg (@args) {
+      for my $p ( $arg =~ /([\d\w]+)/g ) {
+        if ( $p =~ m/^\d+/ ) {
+          push @$pitch_set, $p % $dis;
+        } else {
+          push @$pitch_set, $atu->notes2pitches($p);
+        }
       }
     }
   }
@@ -381,11 +386,16 @@ sub stdin2pitchsets {
   my @ss;
   while ( my $line = readline STDIN ) {
     my @pset;
-    for my $p ( $line =~ /([\d\w]+)/g ) {
-      if ( $p =~ m/^\d+/ ) {
-        push @pset, $p % $dis;
-      } else {
-        push @pset, $atu->notes2pitches($p);
+    if ( $line =~ m/(\d-[zZ\d]+)/ ) {
+      @pset = @{ $atu->forte2pcs($1) };
+      die "unknown Forte Number\n" if !@pset;
+    } else {
+      for my $p ( $line =~ /([\d\w]+)/g ) {
+        if ( $p =~ m/^\d+/ ) {
+          push @pset, $p % $dis;
+        } else {
+          push @pset, $atu->notes2pitches($p);
+        }
       }
     }
     push @ss, \@pset;
