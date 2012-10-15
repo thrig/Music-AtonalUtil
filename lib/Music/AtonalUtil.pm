@@ -8,7 +8,7 @@ use Algorithm::Permute ();
 use Carp qw/croak/;
 use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 
 my $DEG_IN_SCALE = 12;
 
