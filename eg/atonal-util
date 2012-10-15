@@ -111,6 +111,8 @@ sub basic {
     scalar $atu->interval_class_content( args2pitchset( $atu, @args ) ),
     lyflag => 0
   );
+  my $forte = $atu->pcs2forte( args2pitchset( $atu, @args ) );
+  print $forte, "\n" if $forte;
 }
 
 sub circular_permute {
@@ -476,12 +478,14 @@ Atonal music analysis utilities. Options:
 Most modes accept a pitch set (a list of positive integers or lilypond
 note names (see source for supported names)) either as arguments, or
 specified on STDIN if the arguments list is blank, or the final argument
-is a hyphen. Exceptions include (:
+is a hyphen. Exceptions include:
 
   invert    --n=N       Custom inversion axis (default is 0).
   multiply  --n=N       Multiply the pitch set by a factor (default is 1).
   pitch2intervalclass   Accepts a single pitch, not a pitch set.
   transpose --n=N       Custom transposition (default is 0).
+
+Forte Numbers should be usable anywhere a pitch set can be specified.
 
 Example:
   $0 invert --axis=3  0 3 6 7
@@ -497,7 +501,7 @@ Example:
   (echo 0,1,3,7; echo 0,1,4,6) | $0 zrelation
 
 There is also a 'basic' mode that computes both the prime form and
-interval class content of the input pitch set:
+interval class content (and Forte Number, if possible):
 
   $0 --ly basic c e g
 
