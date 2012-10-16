@@ -17,6 +17,7 @@ my %modes = (
   equivs                 => \&equivs,
   findin                 => \&findin,
   forte2pcs              => \&forte2pcs,
+  fnums                  => \&fnums,
   interval_class_content => \&interval_class_content,
   invariance_matrix      => \&invariance_matrix,
   invariants             => \&invariants,
@@ -192,6 +193,14 @@ sub forte2pcs {
   GetOptionsFromArray( \@args, @Std_Opts ) || print_help();
 
   emit_pitch_set( $atu, $atu->forte2pcs( $args[0] ) );
+}
+
+sub fnums {
+  my ( $atu, @args ) = @_;
+  my $fns = $atu->fnums;
+  for my $fn ( sort keys %$fns ) {
+    print $fn, "\t", join( ',', @{ $fns->{$fn} } ), "\n";
+  }
 }
 
 sub emit_pitch_set {
@@ -617,6 +626,14 @@ B<transpose_invert> operation) complete the base pitch set:
   Ti(5) d,bes,f
   T(7)  d,bes,g
 
+=item B<forte2pcs> I<forte_number>
+
+Given a Forte Number, return the corresponding pitch set.
+
+=item B<forte2pcs> I<fnums>
+
+Return a list of all Forte Numbers and corresponding pitch sets.
+
 =item B<interval_class_content>
 
 See L<Music::AtonalUtil>.
@@ -642,6 +659,10 @@ See L<Music::AtonalUtil>.
 =item B<normal_form>
 
 See L<Music::AtonalUtil>.
+
+=item B<pcs2forte>
+
+Given a pitch set, returns the corresponding Forte Number, if any.
 
 =item B<pitch2intervalclass> I<pitch>
 

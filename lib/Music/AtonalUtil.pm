@@ -489,6 +489,11 @@ sub forte2pcs {
   return $FORTE2PCS->{ lc $forte_number };
 }
 
+sub fnums {
+  my ( $self ) = @_;
+  return $FORTE2PCS;
+}
+
 sub interval_class_content {
   my ( $self, $pset ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -1066,6 +1071,11 @@ the original set.
 Given a Forte Number (such as C<6-z44> or C<6-Z44>), returns the
 corresponding pitch set as an array reference, or nothing if an unknown
 Forte Number is supplied.
+
+=item B<fnums>
+
+Returns hash reference of which keys are Forte Numbers and values are
+array references to the corresponding pitch sets.
 
 =item B<interval_class_content> I<pitch_set>
 

@@ -24,6 +24,7 @@ _atonalutil_mode() {
     'complement:complement of set'
     'equivs:Tn and TnI equivalents' \
     'findin:find pitch sets satisfying a base set' \
+    'fnums:return all Forte Numbers and pitch sets' \
     'forte2pcs:return pitch set for Forte Number' \
     'interval_class_content:ICC'
     'invariance_matrix:invarience under TnI' \
@@ -84,6 +85,7 @@ _atonalutil_equivs() {
     '--flats[print notes as flats]' \
     '--ly[emit notes not pitch numbers]'
 }
+_atonalutil_fnums() { }
 _atonalutil_findin() {
   _arguments -s \
     '--flats[print notes as flats]' \
