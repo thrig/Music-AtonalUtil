@@ -42,6 +42,7 @@ _atonalutil_mode() {
     'subsets:subsets of a given pitch set' \
     'tcis:transposition inversion common-tone structure' \
     'tcs:transposition common-tone structure' \
+    'tension:tension values for given pitch set' \
     'transpose:Tn' \
     'transpose_invert:TnI' \
     'variances:intersection, difference, and union of two sets' \
@@ -162,6 +163,7 @@ _atonalutil_set_complex() {
 }
 _atonalutil_tcis() { }
 _atonalutil_tcs() { }
+_atonalutil_tension() { }
 _atonalutil_transpose() {
   _arguments -s \
     '--transpose=[transposition value]:value:( )' \
