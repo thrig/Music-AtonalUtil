@@ -9,6 +9,7 @@ use warnings;
 use Getopt::Long qw/GetOptions GetOptionsFromArray/;
 use List::MoreUtils qw/all uniq/;
 use Music::AtonalUtil;
+use Music::Tension::Cope;
 
 my %modes = (
   basic                  => \&basic,
@@ -197,9 +198,15 @@ sub forte2pcs {
 
 sub fnums {
   my ( $atu, @args ) = @_;
+  my $tension = Music::Tension::Cope->new();
+
   my $fns = $atu->fnums;
   for my $fn ( sort keys %$fns ) {
-    print $fn, "\t", join( ',', @{ $fns->{$fn} } ), "\n";
+    my $pset = $fns->{$fn};
+    my ( $t_avg, $t_max, $t_min, $t_ref ) = $tension->pcs($pset);
+    printf "%s\t%-16s\t%.03f  %.03f %.03f\n", $fn, join( ',', @$pset ),
+      $t_avg,
+      $t_min, $t_max;
   }
 }
 
@@ -632,7 +639,8 @@ Given a Forte Number, return the corresponding pitch set.
 
 =item B<forte2pcs> I<fnums>
 
-Return a list of all Forte Numbers and corresponding pitch sets.
+Return a list of all Forte Numbers and corresponding pitch sets, plus
+average tension, min tenion, and max tension via Music::Tension::Cope.
 
 =item B<interval_class_content>
 
