@@ -982,7 +982,7 @@ __END__
 
 =head1 NAME
 
-Music::AtonalUtil - Perl extension for atonal music analysis and composition
+Music::AtonalUtil - atonal music analysis and composition
 
 =head1 SYNOPSIS
 
