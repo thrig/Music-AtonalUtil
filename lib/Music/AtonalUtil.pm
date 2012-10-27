@@ -992,13 +992,13 @@ absolute pitch-class interval (APIC) vector:
 
 https://en.wikipedia.org/wiki/Interval_vector
 
-Uses include an indication of invarience under transposition; see
+Uses include an indication of invariance under transposition; see
 the B<invariants> mode of C<eg/atonal-util> for the display of
 invariant pitches.
 
 =item B<invariance_matrix> I<pitch_set>
 
-Returns reference to an array of references that comprise the invarience
+Returns reference to an array of references that comprise the invariance
 under Transpose(N)Inversion operations on the given pitch set. Probably
 easier to use the B<invariants> mode of C<eg/atonal-util> or use
 equivalent code.
@@ -1011,7 +1011,7 @@ Some examples or styles assume rotation with an axis of 6, for example:
 
 https://en.wikipedia.org/wiki/Set_%28music%29#Serial
 
-Has the "retrograde-inverse transposition" of C<0 11 3> becomming C<4 8
+Has the "retrograde-inverse transposition" of C<0 11 3> becoming C<4 8
 7>. This can be reproduced via:
 
   my $p = $atu->retrograde([0,11,3]);
