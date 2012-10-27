@@ -1,3 +1,5 @@
+# Code for atonal music analysis and composition
+
 package Music::AtonalUtil;
 
 use 5.010;
@@ -8,7 +10,7 @@ use Algorithm::Permute ();
 use Carp qw/croak/;
 use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 my $DEG_IN_SCALE = 12;
 
@@ -451,8 +453,6 @@ sub new {
   # XXX packing not implemented beyond "right" method (via www.mta.ca docs)
   $self->{_packing} = $param{PACKING} // 'right';
 
-  $self->{_p2n_flavor} = $param{P2N_STYLE} // 'sharps';
-
   bless $self, $class;
   return $self;
 }
@@ -490,7 +490,7 @@ sub forte2pcs {
 }
 
 sub fnums {
-  my ( $self ) = @_;
+  my ($self) = @_;
   return $FORTE2PCS;
 }
 
@@ -621,66 +621,10 @@ sub normal_form {
   return \@normal;
 }
 
-sub notes2pitches {
-  my ( $self, $noteset, $conversion ) = @_;
-  $noteset = [$noteset] if ref $noteset ne 'ARRAY';
-
-  # For lilypond default input, which is what I mostly use, so there.
-  if ( !defined $conversion ) {
-    $conversion = {
-      bis   => 0,
-      c     => 0,
-      deses => 0,
-      bisis => 1,
-      cis   => 1,
-      des   => 1,
-      cisis => 2,
-      d     => 2,
-      eeses => 2,
-      dis   => 3,
-      ees   => 3,
-      feses => 3,
-      disis => 4,
-      e     => 4,
-      fes   => 4,
-      eis   => 5,
-      f     => 5,
-      geses => 5,
-      eisis => 6,
-      fis   => 6,
-      ges   => 6,
-      fisis => 7,
-      g     => 7,
-      aeses => 7,
-      gis   => 8,
-      aes   => 8,
-      gisis => 9,
-      a     => 9,
-      beses => 9,
-      ais   => 10,
-      bes   => 10,
-      ceses => 10,
-      aisis => 11,
-      b     => 11,
-      ces   => 11,
-      r     => undef,
-    };
-  } elsif ( ref $conversion ne 'HASH' ) {
-    croak "conversion must be hash ref\n";
-  }
-
-  my @pitches;
-  for my $n (@$noteset) {
-    croak "unknown note '$n'\n" unless exists $conversion->{ lc $n };
-    push @pitches, $conversion->{ lc $n };
-  }
-  return @pitches > 1 ? \@pitches : $pitches[0];
-}
-
 sub pcs2forte {
   my ( $self, $pset ) = @_;
 
-  if (!ref $pset) {
+  if ( !ref $pset ) {
     my @pitches = $pset =~ m/(\d+)/g;
     for my $p (@pitches) {
       $p %= $self->{_DEG_IN_SCALE};
@@ -708,42 +652,6 @@ sub pitch2intervalclass {
   return $pitch > int( $self->{_DEG_IN_SCALE} / 2 )
     ? $self->{_DEG_IN_SCALE} - $pitch
     : $pitch;
-}
-
-sub pitch2note_style {
-  my ( $self, $flavor ) = @_;
-  $self->{_p2n_flavor} = $flavor if defined $flavor;
-  return $self->{_p2n_flavor};
-}
-
-# TODO no concept of registers, would be nice to kick back some
-# indication of register for pitch<0 or pitch>DIS, or really have a
-# "note" or somesuch object that could be a note, or a rest, etc.
-sub pitches2notes {
-  my ( $self, $pset, $flavor, $conversion ) = @_;
-  $pset = [$pset] if ref $pset ne 'ARRAY';
-  $flavor //= $self->{_p2n_flavor};
-
-  if ( !defined $conversion ) {
-    $conversion = {
-      'sharps' =>
-        {qw/0 c 1 cis 2 d 3 dis 4 e 5 f 6 fis 7 g 8 gis 9 a 10 ais 11 b/},
-      'flats' =>
-        {qw/0 c 1 des 2 d 3 ees 4 e 5 f 6 ges 7 g 8 aes 9 a 10 bes 11 b/},
-    };
-  } elsif ( ref $conversion ne 'HASH' ) {
-    croak "conversion must be hash of hash ref\n";
-  }
-  if ( !exists $conversion->{$flavor} ) {
-    croak "unknown pitch to note style\n";
-  }
-
-  my @notes;
-  for my $p (@$pset) {
-    push @notes,
-      $conversion->{$flavor}->{ $p % $self->{_DEG_IN_SCALE} } || undef;
-  }
-  return @notes > 1 ? \@notes : $notes[0];
 }
 
 # Forte has names for prime forms (3-1 and suchlike) though these do not
@@ -1000,7 +908,7 @@ routines. L<"SEE ALSO"> has links to documentation on atonal analysis.
 
 Warning! There may be errors due to misunderstanding of atonal theory by
 the autodidactic author. If in doubt, compare the results of this code
-with other material available.
+with other software or documentation available.
 
 Warning! The interface may change in the future (e.g. more OOish, so can
 do things like ->foo->bar->as_string and the like).
@@ -1037,13 +945,8 @@ Constructor. The degrees in the scale can be adjusted via:
 
 or some other positive integer greater than one, to use a non-12-tone
 basis for subsequent method calls. This value can be set or inspected
-via the B<scale_degrees> call.
-
-The B<pitches2notes> style can also be set here:
-
-  Music::AtonalUtil->new(P2N_STYLE => 'flats');
-
-or via the B<pitch2note_style> method.
+via the B<scale_degrees> call. (Note: non-12-tone scales are in theory
+supported, but have not really been tested.)
 
 =item B<circular_permute> I<pitch_set>
 
@@ -1129,19 +1032,6 @@ different normal forms than the Allen Forte method. There is stub code
 for the Allen Forte method in this module, though I lack enough
 information to verify if that code is correct.
 
-=item B<notes2pitches> I<note_set> I<optional_conversion_hashref>
-
-Utility method that converts (by default lilypond) note names to pitch
-numbers, and returns an arrary reference of the resulting pitch set:
-
-  $atu->notes2pitches([qw/c ees g/]);  # returns [0,3,7]
-  $atu->notes2pitches('d');            # returns 2
-
-An optional hash reference can also be supplied, this should contain
-note name keys to pitch number value mappings (note names are lowercased
-in the code prior to lookup). See B<pitches2notes> for the reverse
-operation.
-
 =item B<pcs2forte> I<pitch_set>
 
 Given a pitch set, returns the Forte Number of that set.
@@ -1159,17 +1049,6 @@ value will be returned if no Forte Number exists for the pitch set.
 Returns the interval class a given pitch belongs to (0 is 0, 11 maps
 down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
 system). Used internally by the B<interval_class_content> method.
-
-=item B<pitch2note_style> I<style>
-
-Returns (or with argument also sets) the default B<pitches2notes> style,
-currently either C<sharps> or C<flats>, to emit chromatics as either all
-sharps or flats.
-
-=item B<pitches2notes> I<pitch_set>
-
-Converts pitch numbers to lilypond note names. See B<notes2pitches> for
-the reverse operation.
 
 =item B<prime_form> I<pitch_set>
 
@@ -1301,7 +1180,8 @@ L<Music::Chord::Positions> for a more tonal module.
 
 =item *
 
-http://lilypond.org/ for documentation on the default note name syntax used by various routines.
+L<Music::LilyPondUtil> for where the pitch-number to lilypond-note-name
+code has been moved to.
 
 =back
 
