@@ -611,7 +611,7 @@ Most all modes accept a pitch set (list of raw pitch numbers (0..number
 of scale degrees) or lilypond note names (bis, c, des, etc.) either on
 the command line or via standard input, though there are exceptions.
 
-The gobal B<--ly> and B<--flats> can be specified as options to modes
+The global B<--ly> and B<--flats> can be specified as options to modes
 that emit pitches. See also L<Music::AtonalUtil> for more documentation.
 
 =over 4
