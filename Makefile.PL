@@ -1,21 +1,22 @@
-use 5.010;
+use 5.010000;
+
+use strict;
+use warnings;
 use ExtUtils::MakeMaker;
 
-WriteMakefile(
+my %params = (
   NAME         => 'Music::AtonalUtil',
   VERSION_FROM => 'lib/Music/AtonalUtil.pm',
-  LICENSE      => 'perl',
   PREREQ_PM    => {
-    Algorithm::Permute  => 0,
-    Carp                => 0,
-    List::MoreUtils     => 0,
-    Music::Tension      => 0,
-    Music::LilyPondUtil => 0,
-    Test::More          => 0,
+    'Algorithm::Permute'  => 0,
+    Carp                  => 0,
+    'List::MoreUtils'     => 0,
+    'Music::Tension'      => 0,
+    'Music::LilyPondUtil' => 0,
+    'Test::More'          => 0,
   },
   ( $] >= 5.005
-    ?    ## Add these new keywords supported since 5.005
-      (
+    ? (
       ABSTRACT_FROM =>
         'lib/Music/AtonalUtil.pm',    # retrieve abstract from module
       AUTHOR => 'Jeremy Mates <jmates@cpan.org>'
@@ -23,3 +24,19 @@ WriteMakefile(
     : ()
   ),
 );
+
+if ( $ExtUtils::MakeMaker::VERSION =~ /^\d\.\d\d$/ and $ExtUtils::MakeMaker::VERSION > 6.30 ) {
+  $params{LICENSE} = 'perl';
+}
+
+if ( $ExtUtils::MakeMaker::VERSION ge '6.46' ) {
+  $params{META_MERGE} = {
+    resources => {
+      homepage   => 'http://github.com/thrig/Music-AtonalUtil',
+      license    => 'http://dev.perl.org/licenses/',
+      repository => 'http://github.com/thrig/Music-AtonalUtil'
+    }
+  };
+}
+
+WriteMakefile(%params);
