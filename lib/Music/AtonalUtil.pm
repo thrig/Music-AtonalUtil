@@ -10,7 +10,7 @@ use Algorithm::Permute ();
 use Carp qw/croak/;
 use List::MoreUtils qw/uniq/;
 
-our $VERSION = '0.20';
+our $VERSION = '0.21';
 
 my $DEG_IN_SCALE = 12;
 
@@ -903,8 +903,9 @@ Then see below for methods.
 
 This module contains a variety of routines suitable for atonal music
 composition and analysis. See the methods below, the test suite, and the
-C<eg/atonal-util> command line interface for ideas on how to use these
-routines. L<"SEE ALSO"> has links to documentation on atonal analysis.
+C<atonal-util> command line interface (in L<App::MusicTools>) for ideas
+on how to use these routines. L<"SEE ALSO"> has links to documentation
+on atonal analysis.
 
 Warning! There may be errors due to misunderstanding of atonal theory by
 the autodidactic author. If in doubt, compare the results of this code
@@ -1181,7 +1182,8 @@ L<Music::Chord::Positions> for a more tonal module.
 =item *
 
 L<Music::LilyPondUtil> for where the pitch-number to lilypond-note-name
-code has been moved to.
+code has been moved to, and L<App::MusicTools> for where the command
+line utilities have been stashed.
 
 =back
 
