@@ -11,6 +11,7 @@ my %params = (
     'Algorithm::Permute' => 0,
     Carp                 => 0,
     'List::MoreUtils'    => 0,
+    'Scalar::Util'       => 0,
     'Test::More'         => 0,
   },
   ( $] >= 5.005

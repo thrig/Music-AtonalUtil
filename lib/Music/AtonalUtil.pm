@@ -8,9 +8,10 @@ use warnings;
 
 use Algorithm::Permute ();
 use Carp qw/croak/;
-use List::MoreUtils qw/uniq/;
+use List::MoreUtils qw/firstidx uniq/;
+use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.21';
+our $VERSION = '0.40';
 
 my $DEG_IN_SCALE = 12;
 
@@ -558,6 +559,47 @@ sub multiply {
   return [ map { my $p = $_ * $factor % $self->{_DEG_IN_SCALE}; $p } @$pset ];
 }
 
+# Utility methods for get/check/reset of each element in turn of a given
+# array reference, with wrap-around. Handy if pulling sequential
+# elements off a list, but have much code between the successive calls.
+{
+  my %seen;
+
+  # get the iterator value for a ref
+  sub geti {
+    my ($self, $ref) = @_;
+    return $seen{$ref} || 0;
+  }
+
+  # nexti(\@array) - returns subsequent elements of array on each
+  # successive call
+  sub nexti {
+    my ($self, $ref) = @_;
+    $seen{$ref} ||= 0;
+    $ref->[ ++$seen{$ref} % @$ref ];
+  }
+
+  # reseti(\@array) - resets counter
+  sub reseti {
+    my ($self, $ref) = @_;
+    $seen{$ref} = 0;
+  }
+
+  # set the iterator for a ref
+  sub seti {
+    my ($self, $ref, $i) = @_;
+    croak "iterator must be number\n" unless looks_like_number($i);
+    $seen{$ref} = $i;
+  }
+
+  # returns current element, but does not advance pointer
+  sub whati {
+    my ($self, $ref) = @_;
+    $seen{$ref} ||= 0;
+    $ref->[ $seen{$ref} % @$ref ];
+  }
+}
+
 sub normal_form {
   my ( $self, $pset ) = @_;
 
@@ -726,6 +768,23 @@ sub rotate {
   }
 
   return \@rot;
+}
+
+# Utility method to rotate a list to a named element (for example "gis"
+# in a list of note names, see etude no.2 for results of heavy use of
+# such rotations).
+sub rotateto {
+  my ( $self, $pset, $what ) = @_;
+
+  croak "nothing to rotate on\n"
+    unless defined $pset
+      and ref $pset eq 'ARRAY'
+      and @$pset;
+  croak "nothing to search on\n" unless defined $what;
+
+  my $index = firstidx { $_ eq $what } @$pset;
+  croak "no such element $what\n" if $index == -1;
+  return $self->rotate( $pset, -$index );
 }
 
 # XXX probably should disallow changing this on the fly, esp. if allow
@@ -1025,6 +1084,36 @@ Multiplies the supplied pitch set by the given factor, modulates the
 results by the B<scale_degrees>, and returns the results as an array
 reference.
 
+=item B<nexti> I<array ref>
+
+Returns the next item from the supplied array reference. Loops around to
+beginning of list if bounds of the array are exceeded. Caches the index
+for subsequent lookups. Part of the B<geti>, B<nexti>, B<reseti>,
+B<seti>, B<whati> set of routines, which are documented here:
+
+=over 4
+
+=item B<geti> I<array ref>
+
+Returns current position in array (which may be larger than the number
+of elements in the list, as the routines modulate the iterator down as
+necessary to fit the reference).
+
+=item B<reseti> I<array ref>
+
+Sets the iterator to zero for the given array reference.
+
+=item B<seti> I<array ref>, I<index>
+
+Sets the iterator to the given value.
+
+=item B<whati> I<array ref>
+
+Returns the value of what is currently pointed at in the array
+reference. Does not advance the index.
+
+=back
+
 =item B<normal_form> I<pitch_set>
 
 Returns the normal form of the passed pitch set, via a "packed from the
@@ -1066,6 +1155,17 @@ reversed data.
 Rotates the members given pitch set by the given integer. Returns array
 reference of the resulting pitch set. B<circular_permute> performs all
 the possible rotations for a pitch set.
+
+=item B<rotateto> I<pitch_set> I<what>
+
+Rotates (via B<rotate>) a given array reference to the named element
+(using string comparisons). Returns array reference of the thus
+rotated set. Throws an exception if anything goes wrong with the input
+or search.
+
+The rotation uses C<firstidx> to find the first element, but then
+rotates negative that index. This may be a concern if there are multiple
+matching elements in a given input list.
 
 =item B<scale_degrees> I<optional_integer>
 
