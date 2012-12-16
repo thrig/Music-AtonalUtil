@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 49;
+use Test::More tests => 52;
 
 ########################################################################
 #
@@ -105,7 +105,8 @@ is_deeply( $atu->rotate( [ 1, 2, 3 ], 2 ), [ 2, 3, 1 ], 'rotate by 2' );
 
 is_deeply( $atu->rotate( [ 1, 2, 3 ], -1 ), [ 2, 3, 1 ], 'rotate by -1' );
 
-is_deeply( $atu->rotateto( [qw/a b c d e/], 'c' ), [ qw/c d e a b/ ], 'rotate to' );
+is_deeply( $atu->rotateto( [qw/a b c d e/], 'c' ),
+  [qw/c d e a b/], 'rotate to' );
 
 is_deeply(
   $atu->set_complex( [ 0, 8, 10, 6, 7, 5, 9, 1, 3, 2, 11, 4 ] ),
@@ -188,14 +189,20 @@ ok( $atu->zrelation( [ 0, 1, 3 ], [ 0, 3, 7 ] ) == 0, 'z-related no' );
 
 ########################################################################
 #
-# nexti and company
+# nexti and company, plus other not-really-atonal routines
 
 my @notes = qw/a b c f e/;
-ok( $atu->geti(\@notes) == 0, 'geti');
-ok( $atu->whati(\@notes) eq 'a', 'whati');
-ok( $atu->nexti(\@notes) eq 'b', 'nexti');
-$atu->seti(\@notes, 4);
-ok( $atu->nexti(\@notes) eq 'a', 'nexti');
+ok( $atu->geti( \@notes ) == 0, 'geti' );
+ok( $atu->whati( \@notes ) eq 'a', 'whati' );
+ok( $atu->nexti( \@notes ) eq 'b', 'nexti' );
+$atu->seti( \@notes, 4 );
+ok( $atu->nexti( \@notes ) eq 'a', 'nexti' );
+
+is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/b c/], 'lastn default' );
+is_deeply( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/],
+  'lastn overflow' );
+$atu = Music::AtonalUtil->new( lastn => 3 );
+is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
 
 ########################################################################
 #

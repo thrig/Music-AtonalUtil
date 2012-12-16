@@ -11,7 +11,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.40';
+our $VERSION = '0.50';
 
 my $DEG_IN_SCALE = 12;
 
@@ -451,6 +451,13 @@ sub new {
     croak("degrees in scale must be greater than one");
   }
 
+  if ( exists $param{lastn} ) {
+    croak "lastn must be number\n" unless looks_like_number $param{lastn};
+    $self->{_lastn} = $param{lastn};
+  } else {
+    $self->{_lastn} = 2;
+  }
+
   # XXX packing not implemented beyond "right" method (via www.mta.ca docs)
   $self->{_packing} = $param{PACKING} // 'right';
 
@@ -550,6 +557,23 @@ sub invert {
   return \@inverse;
 }
 
+# Utility routine to get the last few elements of a list (but never more
+# than the whole list, etc).
+sub lastn {
+  my ( $self, $pset, $n ) = @_;
+  croak "cannot get elements of nothing"
+    if !defined $pset
+      or ref $pset ne 'ARRAY'
+      or !@$pset;
+  $n //= $self->{_lastn};
+  croak "n of lastn must be number\n" unless looks_like_number $n;
+
+  my $len = @$pset;
+  $len = $n if $len > $n;
+  $len *= -1;
+  return @{$pset}[ $len .. -1 ];
+}
+
 sub multiply {
   my ( $self, $pset, $factor ) = @_;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
@@ -567,34 +591,34 @@ sub multiply {
 
   # get the iterator value for a ref
   sub geti {
-    my ($self, $ref) = @_;
+    my ( $self, $ref ) = @_;
     return $seen{$ref} || 0;
   }
 
   # nexti(\@array) - returns subsequent elements of array on each
   # successive call
   sub nexti {
-    my ($self, $ref) = @_;
+    my ( $self, $ref ) = @_;
     $seen{$ref} ||= 0;
     $ref->[ ++$seen{$ref} % @$ref ];
   }
 
   # reseti(\@array) - resets counter
   sub reseti {
-    my ($self, $ref) = @_;
+    my ( $self, $ref ) = @_;
     $seen{$ref} = 0;
   }
 
   # set the iterator for a ref
   sub seti {
-    my ($self, $ref, $i) = @_;
+    my ( $self, $ref, $i ) = @_;
     croak "iterator must be number\n" unless looks_like_number($i);
     $seen{$ref} = $i;
   }
 
   # returns current element, but does not advance pointer
   sub whati {
-    my ($self, $ref) = @_;
+    my ( $self, $ref ) = @_;
     $seen{$ref} ||= 0;
     $ref->[ $seen{$ref} % @$ref ];
   }
@@ -1077,6 +1101,14 @@ Has the "retrograde-inverse transposition" of C<0 11 3> becoming C<4 8
   my $p = $atu->retrograde([0,11,3]);
   $p = $atu->invert($p, 6);
   $p = $atu->transpose($p, 1);
+
+=item B<lastn> I<array_ref>, I<n>
+
+Returns the last N elements of the supplied array reference, or the
+entire list if N > the number of elements available. (Handy if saving
+up recent pitches or notes, then are using some filter to exclude
+"recent" pitches or notes from what is next being generated, to avoid
+repeated notes.)
 
 =item B<multiply> I<pitch_set> I<factor>
 
