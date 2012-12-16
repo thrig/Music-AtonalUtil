@@ -11,7 +11,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.50';
+our $VERSION = '0.51';
 
 my $DEG_IN_SCALE = 12;
 
@@ -563,8 +563,10 @@ sub lastn {
   my ( $self, $pset, $n ) = @_;
   croak "cannot get elements of nothing"
     if !defined $pset
-      or ref $pset ne 'ARRAY'
-      or !@$pset;
+      or ref $pset ne 'ARRAY';
+
+  return unless @$pset;
+
   $n //= $self->{_lastn};
   croak "n of lastn must be number\n" unless looks_like_number $n;
 
@@ -1105,10 +1107,11 @@ Has the "retrograde-inverse transposition" of C<0 11 3> becoming C<4 8
 =item B<lastn> I<array_ref>, I<n>
 
 Returns the last N elements of the supplied array reference, or the
-entire list if N > the number of elements available. (Handy if saving
-up recent pitches or notes, then are using some filter to exclude
-"recent" pitches or notes from what is next being generated, to avoid
-repeated notes.)
+entire list if N > the number of elements available. Returns nothing if
+the array reference is empty, but otherwise will throw an exception if
+something is awry. (Handy if saving up recent pitches or notes, then are
+using some filter to exclude "recent" pitches or notes from what is next
+being generated, to avoid repeated notes.)
 
 =item B<multiply> I<pitch_set> I<factor>
 
