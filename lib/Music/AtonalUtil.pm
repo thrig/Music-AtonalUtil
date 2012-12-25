@@ -1,4 +1,7 @@
-# Code for atonal music analysis and composition
+# Code for atonal music analysis and composition (plus an assortment of
+# other routines perhaps suitable for composition needs but not exactly
+# atonal, and I do not want to create some Music::KitchenDrawer or
+# whatever for them, and I'm totally making all this up as I go along).
 
 package Music::AtonalUtil;
 
@@ -11,7 +14,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.51';
+our $VERSION = '0.60';
 
 my $DEG_IN_SCALE = 12;
 
@@ -490,6 +493,39 @@ sub complement {
   my %seen;
   @seen{@$pset} = ();
   return [ grep { !exists $seen{$_} } 0 .. $self->{_DEG_IN_SCALE} - 1 ];
+}
+
+# Utility, "mirrors" a pitch to be within supplied min/max values as
+# appropriate for how many times the pitch "reflects" back within those
+# limits, which will depend on which limit is broken and by how much.
+sub constrain_pitch {
+  my ( $self, $v, $min, $max ) = @_;
+  croak "invalid value" if !looks_like_number $v;
+  croak "invalid bounds"
+    if !looks_like_number $min
+      or !looks_like_number $max
+      or $min >= $max;
+  return $v if $v <= $max and $v >= $min;
+
+  my ( @origins, $overshoot, $direction );
+  if ( $v > $max ) {
+    @origins   = ( $max, $min );
+    $overshoot = abs( $v - $max );
+    $direction = -1;
+  } else {
+    @origins   = ( $min, $max );
+    $overshoot = abs( $min - $v );
+    $direction = 1;
+  }
+  my $range    = abs( $max - $min );
+  my $register = int( $overshoot / $range );
+  if ( $register % 2 == 1 ) {
+    @origins = reverse @origins;
+    $direction *= -1;
+  }
+  my $remainder = $overshoot % $range;
+
+  return $origins[0] + $remainder * $direction;
 }
 
 sub forte2pcs {
@@ -987,9 +1023,10 @@ Then see below for methods.
 =head1 DESCRIPTION
 
 This module contains a variety of routines suitable for atonal music
-composition and analysis. See the methods below, the test suite, and the
+composition and analysis (plus a bunch of other routines I could find
+no better home for). See the methods below, the test suite, and the
 C<atonal-util> command line interface (in L<App::MusicTools>) for ideas
-on how to use these routines. L<"SEE ALSO"> has links to documentation
+on how to use these routines. L</"SEE ALSO"> has links to documentation
 on atonal analysis.
 
 Warning! There may be errors due to misunderstanding of atonal theory by
@@ -1054,6 +1091,19 @@ pitch set.
 
 Calling B<prime_form> on the result will find the abstract complement of
 the original set.
+
+=item B<constrain_pitch> I<pitch>, I<min>, I<max>
+
+Constrains the supplied pitch to reside within the supplied minimum and
+maximum limits, by "reflecting" the pitch back off the limits. For
+example, given the min and max limits of 6 and 12:
+
+  pitch  ... 10 11 12 13 14 15 16 17 18 19 20 21 ...
+  result ... 10 11 12 11 10  9  8  7  6  7  8  9 ...
+
+This may be of use in a L<Music::LilyPondUtil> C<*_pitch_hook> function
+to keep the notes within a certain range (modulus math, by contrast,
+produces a sawtooth pattern with occasional leaps).
 
 =item B<forte2pcs> I<forte_number>
 

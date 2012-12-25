@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 52;
+use Test::More tests => 53;
 
 ########################################################################
 #
@@ -203,6 +203,16 @@ is_deeply( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/],
   'lastn overflow' );
 $atu = Music::AtonalUtil->new( lastn => 3 );
 is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
+
+{
+  my @pitches  = -10 .. 10;
+  my @expected = qw/2 3 4 5 4 3 2 3 4 5 4 3 2 3 4 5 4 3 2 3 4/;
+  my @results;
+  for my $p (@pitches) {
+    push @results, $atu->constrain_pitch( $p, 2, 5 );
+  }
+  is_deeply( \@results, \@expected, 'constrain_pitch' );
+}
 
 ########################################################################
 #
