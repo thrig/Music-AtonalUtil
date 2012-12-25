@@ -1126,7 +1126,7 @@ sound the same (see also B<zrelation>).
 This vector is also known as a pitch-class interval (PIC) vector or
 absolute pitch-class interval (APIC) vector:
 
-https://en.wikipedia.org/wiki/Interval_vector
+L<https://en.wikipedia.org/wiki/Interval_vector>
 
 Uses include an indication of invariance under transposition; see
 the B<invariants> mode of C<eg/atonal-util> for the display of
@@ -1145,7 +1145,7 @@ Inverts the given pitch set, by default around the 0 axis, within the
 degrees in scale. Returns resulting pitch set as an array reference.
 Some examples or styles assume rotation with an axis of 6, for example:
 
-https://en.wikipedia.org/wiki/Set_%28music%29#Serial
+L<https://en.wikipedia.org/wiki/Set_%28music%29#Serial>
 
 Has the "retrograde-inverse transposition" of C<0 11 3> becoming C<4 8
 7>. This can be reproduced via:
@@ -1325,7 +1325,7 @@ B<interval_class_content>, false if not.
 If the bug is in the latest version, send a report to the author.
 Patches that fix problems or add new features are welcome.
 
-http://github.com/thrig/Music-AtonalUtil
+L<http://github.com/thrig/Music-AtonalUtil>
 
 =head2 Known Issues
 
@@ -1346,7 +1346,7 @@ array references.
 
 =item *
 
-http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/
+L<http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/>
 
 =item *
 
@@ -1358,7 +1358,7 @@ Musimathics, Vol. 1, p.311-317
 
 =item *
 
-http://en.wikipedia.org/wiki/Forte_number
+L<http://en.wikipedia.org/wiki/Forte_number>
 
 =item *
 
