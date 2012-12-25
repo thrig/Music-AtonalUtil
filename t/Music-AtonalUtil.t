@@ -209,9 +209,9 @@ is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
   my @expected = qw/2 3 4 5 4 3 2 3 4 5 4 3 2 3 4 5 4 3 2 3 4/;
   my @results;
   for my $p (@pitches) {
-    push @results, $atu->constrain_pitch( $p, 2, 5 );
+    push @results, $atu->reflect_pitch( $p, 2, 5 );
   }
-  is_deeply( \@results, \@expected, 'constrain_pitch' );
+  is_deeply( \@results, \@expected, 'reflect_pitch' );
 }
 
 ########################################################################

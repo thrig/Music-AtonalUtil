@@ -14,7 +14,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.60';
+our $VERSION = '0.61';
 
 my $DEG_IN_SCALE = 12;
 
@@ -498,10 +498,10 @@ sub complement {
 # Utility, "mirrors" a pitch to be within supplied min/max values as
 # appropriate for how many times the pitch "reflects" back within those
 # limits, which will depend on which limit is broken and by how much.
-sub constrain_pitch {
+sub reflect_pitch {
   my ( $self, $v, $min, $max ) = @_;
-  croak "invalid value" if !looks_like_number $v;
-  croak "invalid bounds"
+  croak "pitch must be a number" if !looks_like_number $v;
+  croak "limits must be numbers and min less than max"
     if !looks_like_number $min
       or !looks_like_number $max
       or $min >= $max;
@@ -1092,7 +1092,7 @@ pitch set.
 Calling B<prime_form> on the result will find the abstract complement of
 the original set.
 
-=item B<constrain_pitch> I<pitch>, I<min>, I<max>
+=item B<reflect_pitch> I<pitch>, I<min>, I<max>
 
 Constrains the supplied pitch to reside within the supplied minimum and
 maximum limits, by "reflecting" the pitch back off the limits. For
