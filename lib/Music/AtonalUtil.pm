@@ -1,3 +1,5 @@
+# -*- Perl -*-
+#
 # Code for atonal music analysis and composition (plus an assortment of
 # other routines perhaps suitable for composition needs but not exactly
 # atonal, and I do not want to create some Music::KitchenDrawer or
