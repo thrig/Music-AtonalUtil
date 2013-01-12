@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.61';
+our $VERSION = '0.62';
 
 my $DEG_IN_SCALE = 12;
 
@@ -1380,10 +1380,10 @@ Jeremy Mates, E<lt>jmates@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2012 by Jeremy Mates
+Copyright (C) 2012-2013 by Jeremy Mates
 
 This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.14.2 or, at
+under the same terms as Perl itself, either Perl version 5.16 or, at
 your option, any later version of Perl 5 you may have available.
 
 =cut
