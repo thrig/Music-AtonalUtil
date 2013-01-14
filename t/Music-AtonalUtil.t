@@ -3,7 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 53;
+use Test::More tests => 56;
+
+eval 'use Test::Differences';    # display convenience
+my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
 
 ########################################################################
 #
@@ -49,6 +52,16 @@ is_deeply(
   'icc icv of non-unique pitch set'
 );
 
+$deeply->(
+  $atu->intervals2pcs( [qw/4 3 -1 1 5/] ),
+  [qw/0 4 7 6 7 12/], 'intervals2pcs'
+);
+
+$deeply->(
+  $atu->intervals2pcs( [qw/7 -4 -3/], 2 ),
+  [qw/2 9 5 2/], 'intervals2pcs custom start'
+);
+
 is_deeply(
   $atu->invariance_matrix( [ 3, 5, 6, 9 ] ),
   [ [ 6, 8, 9, 0 ], [ 8, 10, 11, 2 ], [ 9, 11, 0, 3 ], [ 0, 2, 3, 6 ] ],
@@ -85,6 +98,8 @@ is( $atu->pcs2forte('0,1,3,4,7,8'),   '6-z19', 'PCS string to Forte 1' );
 is( $atu->pcs2forte('[0,1,3,4,7,8]'), '6-z19', 'PCS string to Forte 2' );
 is( $atu->pcs2forte( [ 0, 1, 3, 4, 7, 8 ] ), '6-z19', 'PCS to Forte 1' );
 is( $atu->pcs2forte( [qw/6 5 4 1 0 9/] ), '6-z44', 'PCS to Forte 2' );
+
+$deeply->( $atu->pcs2intervals( [qw/0 1 3/] ), [qw/1 2/], 'pcs2intervals' );
 
 is( $atu->pitch2intervalclass(0),  0, 'pitch2intervalclass 0' );
 is( $atu->pitch2intervalclass(1),  1, 'pitch2intervalclass 1' );
@@ -194,7 +209,7 @@ ok( $atu->zrelation( [ 0, 1, 3 ], [ 0, 3, 7 ] ) == 0, 'z-related no' );
 # nexti and company, plus other not-really-atonal routines
 
 my @notes = qw/a b c f e/;
-ok( $atu->geti( \@notes ) == 0, 'geti' );
+ok( $atu->geti( \@notes ) == 0,    'geti' );
 ok( $atu->whati( \@notes ) eq 'a', 'whati' );
 ok( $atu->nexti( \@notes ) eq 'b', 'nexti' );
 $atu->seti( \@notes, 4 );

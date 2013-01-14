@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.62';
+our $VERSION = '0.70';
 
 my $DEG_IN_SCALE = 12;
 
@@ -505,8 +505,8 @@ sub reflect_pitch {
   croak "pitch must be a number" if !looks_like_number $v;
   croak "limits must be numbers and min less than max"
     if !looks_like_number $min
-      or !looks_like_number $max
-      or $min >= $max;
+    or !looks_like_number $max
+    or $min >= $max;
   return $v if $v <= $max and $v >= $min;
 
   my ( @origins, $overshoot, $direction );
@@ -554,7 +554,7 @@ sub interval_class_content {
         $self->pitch2intervalclass(
           ( $nset[$i] - $nset[$j] ) % $self->{_DEG_IN_SCALE}
         )
-        }++;
+      }++;
     }
   }
 
@@ -564,6 +564,21 @@ sub interval_class_content {
   }
 
   return wantarray ? ( \@icv, \%icc ) : \@icv;
+}
+
+sub intervals2pcs {
+  my ( $self, $iset, $start_pitch ) = @_;
+  $start_pitch //= 0;
+
+  croak "interval set must be array ref\n" unless ref $iset eq 'ARRAY';
+  croak "interval set must contain something\n" if !@$iset;
+
+  my @pset = $start_pitch;
+  for my $i (@$iset) {
+    push @pset, $pset[-1] + $i;
+  }
+
+  return \@pset;
 }
 
 sub invariance_matrix {
@@ -601,7 +616,7 @@ sub lastn {
   my ( $self, $pset, $n ) = @_;
   croak "cannot get elements of nothing"
     if !defined $pset
-      or ref $pset ne 'ARRAY';
+    or ref $pset ne 'ARRAY';
 
   return unless @$pset;
 
@@ -749,6 +764,21 @@ sub pcs2forte {
   return $PCS2FORTE->{$pset};
 }
 
+sub pcs2intervals {
+  my ( $self, $pset ) = @_;
+
+  if ( !defined $pset or ref $pset ne 'ARRAY' or @$pset < 2 ) {
+    croak "pitch set must contain at least two elements\n" if !@$pset;
+  }
+
+  my @intervals;
+  for my $i ( 1 .. $#{$pset} ) {
+    push @intervals, $pset->[$i] - $pset->[ $i - 1 ];
+  }
+
+  return \@intervals;
+}
+
 sub pitch2intervalclass {
   my ( $self, $pitch ) = @_;
 
@@ -818,7 +848,7 @@ sub rotate {
   my ( $self, $pset, $r ) = @_;
   croak "rotate value must be integer\n"
     if !defined $r
-      or $r !~ /^-?\d+$/;
+    or $r !~ /^-?\d+$/;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
@@ -842,8 +872,8 @@ sub rotateto {
 
   croak "nothing to rotate on\n"
     unless defined $pset
-      and ref $pset eq 'ARRAY'
-      and @$pset;
+    and ref $pset eq 'ARRAY'
+    and @$pset;
   croak "nothing to search on\n" unless defined $what;
 
   my $index = firstidx { $_ eq $what } @$pset;
@@ -858,8 +888,8 @@ sub scale_degrees {
   if ( defined $dis ) {
     croak "scale degrees value must be positive integer greater than 1\n"
       if !defined $dis
-        or $dis !~ /^\d+$/
-        or $dis < 2;
+      or $dis !~ /^\d+$/
+      or $dis < 2;
     $self->{_DEG_IN_SCALE} = $dis;
   }
   return $self->{_DEG_IN_SCALE};
@@ -944,7 +974,7 @@ sub transpose {
   my ( $self, $pset, $t ) = @_;
   croak "transpose value must be integer\n"
     if !defined $t
-      or $t !~ /^-?\d+$/;
+    or $t !~ /^-?\d+$/;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
 
@@ -960,7 +990,7 @@ sub transpose_invert {
   my ( $self, $pset, $t, $axis ) = @_;
   croak "transpose value must be integer\n"
     if !defined $t
-      or $t !~ /^-?\d+$/;
+    or $t !~ /^-?\d+$/;
   croak "pitch set must be array ref\n" unless ref $pset eq 'ARRAY';
   croak "pitch set must contain something\n" if !@$pset;
   $axis //= 0;
@@ -1134,6 +1164,12 @@ Uses include an indication of invariance under transposition; see
 the B<invariants> mode of C<eg/atonal-util> for the display of
 invariant pitches.
 
+=item B<intervals2pcs> I<pitch_set>, [I<start_pitch>]
+
+Given a list of intervals as an array reference and an optional starting
+pitch, converts those intervals into a pitch set, and returns an array
+reference to that. The start pitch is 0 if unset.
+
 =item B<invariance_matrix> I<pitch_set>
 
 Returns reference to an array of references that comprise the invariance
@@ -1220,6 +1256,12 @@ Given a pitch set, returns the Forte Number of that set.
 
 The Forte Numbers use lowercase C<z>, for example C<6-z44>. An undefined
 value will be returned if no Forte Number exists for the pitch set.
+
+=item B<pcs2intervals> I<pitch_set>
+
+Given a pitch set of at least two elements, returns the list of
+intervals between those pitch elements. This list is returned as an
+array reference.
 
 =item B<pitch2intervalclass> I<pitch>
 
