@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.70';
+our $VERSION = '0.71';
 
 my $DEG_IN_SCALE = 12;
 
@@ -1047,7 +1047,7 @@ Music::AtonalUtil - atonal music analysis and composition
 
 =head1 SYNOPSIS
 
-  use Music::AtonalUtil;
+  use Music::AtonalUtil ();
   my $atu = Music::AtonalUtil->new;
 
 Then see below for methods.
