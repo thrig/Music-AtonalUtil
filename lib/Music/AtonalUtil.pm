@@ -453,11 +453,11 @@ sub new {
 
   $self->{_DEG_IN_SCALE} = int( $param{DEG_IN_SCALE} // $DEG_IN_SCALE );
   if ( $self->{_DEG_IN_SCALE} < 2 ) {
-    croak("degrees in scale must be greater than one");
+    croak 'degrees in scale must be greater than one';
   }
 
   if ( exists $param{lastn} ) {
-    croak "lastn must be number" unless looks_like_number $param{lastn};
+    croak 'lastn must be number' unless looks_like_number $param{lastn};
     $self->{_lastn} = $param{lastn};
   } else {
     $self->{_lastn} = 2;
@@ -476,8 +476,8 @@ sub new {
 
 sub circular_permute {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my @perms;
   for my $i ( 0 .. $#$pset ) {
@@ -490,7 +490,7 @@ sub circular_permute {
 
 sub complement {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
 
   my %seen;
   @seen{@$pset} = ();
@@ -502,8 +502,8 @@ sub complement {
 # limits, which will depend on which limit is broken and by how much.
 sub reflect_pitch {
   my ( $self, $v, $min, $max ) = @_;
-  croak "pitch must be a number" if !looks_like_number $v;
-  croak "limits must be numbers and min less than max"
+  croak 'pitch must be a number' if !looks_like_number $v;
+  croak 'limits must be numbers and min less than max'
     if !looks_like_number $min
     or !looks_like_number $max
     or $min >= $max;
@@ -542,10 +542,10 @@ sub fnums {
 
 sub interval_class_content {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
 
   my @nset = sort { $a <=> $b } uniq @$pset;
-  croak "pitch set must contain at least two elements" if @nset < 2;
+  croak 'pitch set must contain at least two elements' if @nset < 2;
 
   my %icc;
   for my $i ( 1 .. $#nset ) {
@@ -570,8 +570,8 @@ sub intervals2pcs {
   my ( $self, $iset, $start_pitch ) = @_;
   $start_pitch //= 0;
 
-  croak "interval set must be array ref" unless ref $iset eq 'ARRAY';
-  croak "interval set must contain something" if !@$iset;
+  croak 'interval set must be array ref' unless ref $iset eq 'ARRAY';
+  croak 'interval set must contain something' if !@$iset;
 
   my @pset = $start_pitch;
   for my $i (@$iset) {
@@ -583,8 +583,8 @@ sub intervals2pcs {
 
 sub invariance_matrix {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my @ivm;
   for my $i ( 0 .. $#$pset ) {
@@ -598,8 +598,8 @@ sub invariance_matrix {
 
 sub invert {
   my ( $self, $pset, $axis ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
   $axis //= 0;
 
   my @inverse = @$pset;
@@ -614,14 +614,14 @@ sub invert {
 # than the whole list, etc).
 sub lastn {
   my ( $self, $pset, $n ) = @_;
-  croak "cannot get elements of nothing"
+  croak 'cannot get elements of nothing'
     if !defined $pset
     or ref $pset ne 'ARRAY';
 
   return unless @$pset;
 
   $n //= $self->{_lastn};
-  croak "n of lastn must be number" unless looks_like_number $n;
+  croak 'n of lastn must be number' unless looks_like_number $n;
 
   my $len = @$pset;
   $len = $n if $len > $n;
@@ -631,8 +631,8 @@ sub lastn {
 
 sub multiply {
   my ( $self, $pset, $factor ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
   $factor //= 1;
 
   return [ map { my $p = $_ * $factor % $self->{_DEG_IN_SCALE}; $p } @$pset ];
@@ -667,7 +667,7 @@ sub multiply {
   # set the iterator for a ref
   sub seti {
     my ( $self, $ref, $i ) = @_;
-    croak "iterator must be number" unless looks_like_number($i);
+    croak 'iterator must be number' unless looks_like_number($i);
     $seen{$ref} = $i;
   }
 
@@ -682,8 +682,8 @@ sub multiply {
 sub normal_form {
   my ( $self, $pset ) = @_;
 
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my @nset = sort { $a <=> $b } uniq @$pset;
 
@@ -754,11 +754,11 @@ sub pcs2forte {
   }
 
   if ( ref $pset eq 'ARRAY' ) {
-    croak "pitch set must contain something" if !@$pset;
+    croak 'pitch set must contain something' if !@$pset;
     $pset = $self->prime_form($pset);
     $pset = join ',', @$pset;
   } else {
-    croak "pitch set must be array ref or string";
+    croak 'pitch set must be array ref or string';
   }
 
   return $PCS2FORTE->{$pset};
@@ -768,7 +768,7 @@ sub pcs2intervals {
   my ( $self, $pset ) = @_;
 
   if ( !defined $pset or ref $pset ne 'ARRAY' or @$pset < 2 ) {
-    croak "pitch set must contain at least two elements" if !@$pset;
+    croak 'pitch set must contain at least two elements' if !@$pset;
   }
 
   my @intervals;
@@ -797,8 +797,8 @@ sub pitch2intervalclass {
 sub prime_form {
   my ( $self, $pset ) = @_;
 
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my @forms = $self->normal_form($pset);
   push @forms, $self->normal_form( $self->invert( $forms[0] ) );
@@ -839,18 +839,18 @@ sub prime_form {
 
 sub retrograde {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
   return [ reverse @$pset ];
 }
 
 sub rotate {
   my ( $self, $pset, $r ) = @_;
-  croak "rotate value must be integer"
+  croak 'rotate value must be integer'
     if !defined $r
     or $r !~ /^-?\d+$/;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my @rot;
   if ( $r == 0 ) {
@@ -870,11 +870,11 @@ sub rotate {
 sub rotateto {
   my ( $self, $pset, $what ) = @_;
 
-  croak "nothing to rotate on"
+  croak 'nothing to rotate on'
     unless defined $pset
     and ref $pset eq 'ARRAY'
     and @$pset;
-  croak "nothing to search on" unless defined $what;
+  croak 'nothing to search on' unless defined $what;
 
   my $index = firstidx { $_ eq $what } @$pset;
   croak "no such element $what" if $index == -1;
@@ -886,7 +886,7 @@ sub rotateto {
 sub scale_degrees {
   my ( $self, $dis ) = @_;
   if ( defined $dis ) {
-    croak "scale degrees value must be positive integer greater than 1"
+    croak 'scale degrees value must be positive integer greater than 1'
       if !defined $dis
       or $dis !~ /^\d+$/
       or $dis < 2;
@@ -897,8 +897,8 @@ sub scale_degrees {
 
 sub set_complex {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my $iset = $self->invert($pset);
   my $dis  = $self->scale_degrees;
@@ -919,10 +919,10 @@ sub set_complex {
 
 sub subsets {
   my ( $self, $pset, $len ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
   my @nset = uniq @$pset;
-  croak "pitch set must be larger than 1 element" unless @nset > 1;
-  croak "invalid length" if defined $len and ( $len < 1 or $len > @nset );
+  croak 'pitch set must be larger than 1 element' unless @nset > 1;
+  croak 'invalid length' if defined $len and ( $len < 1 or $len > @nset );
 
   $len ||= @nset - 1;
   my $p = Algorithm::Permute->new( \@nset, $len );
@@ -936,8 +936,8 @@ sub subsets {
 
 sub tcis {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my %seen;
   @seen{@$pset} = ();
@@ -954,8 +954,8 @@ sub tcis {
 
 sub tcs {
   my ( $self, $pset ) = @_;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my %seen;
   @seen{@$pset} = ();
@@ -972,11 +972,11 @@ sub tcs {
 
 sub transpose {
   my ( $self, $pset, $t ) = @_;
-  croak "transpose value must be integer"
+  croak 'transpose value must be integer'
     if !defined $t
     or $t !~ /^-?\d+$/;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
 
   my @tset = @$pset;
 
@@ -988,11 +988,11 @@ sub transpose {
 
 sub transpose_invert {
   my ( $self, $pset, $t, $axis ) = @_;
-  croak "transpose value must be integer"
+  croak 'transpose value must be integer'
     if !defined $t
     or $t !~ /^-?\d+$/;
-  croak "pitch set must be array ref" unless ref $pset eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset;
+  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset;
   $axis //= 0;
 
   my $tset = $self->invert( $pset, $axis );
@@ -1006,10 +1006,10 @@ sub transpose_invert {
 sub variances {
   my ( $self, $pset1, $pset2 ) = @_;
 
-  croak "pitch set must be array ref" unless ref $pset1 eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset1;
-  croak "pitch set must be array ref" unless ref $pset2 eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset2;
+  croak 'pitch set must be array ref' unless ref $pset1 eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset1;
+  croak 'pitch set must be array ref' unless ref $pset2 eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset2;
 
   my ( @union, @intersection, @difference, %count );
   for my $p ( @$pset1, @$pset2 ) {
@@ -1026,10 +1026,10 @@ sub variances {
 sub zrelation {
   my ( $self, $pset1, $pset2 ) = @_;
 
-  croak "pitch set must be array ref" unless ref $pset1 eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset1;
-  croak "pitch set must be array ref" unless ref $pset2 eq 'ARRAY';
-  croak "pitch set must contain something" if !@$pset2;
+  croak 'pitch set must be array ref' unless ref $pset1 eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset1;
+  croak 'pitch set must be array ref' unless ref $pset2 eq 'ARRAY';
+  croak 'pitch set must contain something' if !@$pset2;
 
   my @ic_vecs;
   for my $ps ( $pset1, $pset2 ) {
