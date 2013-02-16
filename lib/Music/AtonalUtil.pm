@@ -1139,9 +1139,9 @@ array references to the corresponding pitch sets.
 =item B<interval_class_content> I<pitch_set>
 
 Given a pitch set with at least two elements, returns an array reference
-(and in list context also a hash reference) representing the interval-
-class vector information. Pitch sets with similar ic content tend to
-sound the same (see also B<zrelation>).
+(and in list context also a hash reference) representing the
+interval-class vector information. Pitch sets with similar ic content
+tend to sound the same (see also B<zrelation>).
 
 This vector is also known as a pitch-class interval (PIC) vector or
 absolute pitch-class interval (APIC) vector:
