@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 56;
+use Test::More tests => 57;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -122,9 +122,13 @@ is_deeply( $atu->rotate( [ 1, 2, 3 ], 2 ), [ 2, 3, 1 ], 'rotate by 2' );
 
 is_deeply( $atu->rotate( [ 1, 2, 3 ], -1 ), [ 2, 3, 1 ], 'rotate by -1' );
 
-is_deeply( $atu->rotateto( [qw/a b c d e/], 'c' ),
-  [qw/c d e a b/], 'rotate to' );
+is_deeply( $atu->rotateto( [qw/a b c d e c g/], 'c' ),
+  [qw/c d e c g a b/], 'rotate to' );
 
+is_deeply( $atu->rotateto( [qw/a b c d e c g/], 'c', -1 ),
+  [qw/c g a b c d e/], 'rotate to the other way' );
+
+# Verified against Musimathics, v.1, p.320.
 is_deeply(
   $atu->set_complex( [ 0, 8, 10, 6, 7, 5, 9, 1, 3, 2, 11, 4 ] ),
   [ [ 0,  8,  10, 6,  7,  5,  9,  1,  3,  2,  11, 4 ],
