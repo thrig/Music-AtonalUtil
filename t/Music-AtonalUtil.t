@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 57;
+use Test::More tests => 61;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -98,6 +98,11 @@ is( $atu->pcs2forte('0,1,3,4,7,8'),   '6-z19', 'PCS string to Forte 1' );
 is( $atu->pcs2forte('[0,1,3,4,7,8]'), '6-z19', 'PCS string to Forte 2' );
 is( $atu->pcs2forte( [ 0, 1, 3, 4, 7, 8 ] ), '6-z19', 'PCS to Forte 1' );
 is( $atu->pcs2forte( [qw/6 5 4 1 0 9/] ), '6-z44', 'PCS to Forte 2' );
+
+is( $atu->pcs2forte( [ 0, 7, 4 ] ), '3-11', 'PCS to Forte redux 1' );
+is( $atu->pcs2forte( [ 4, 1, 8 ] ), '3-11', 'PCS to Forte redux 2' );
+is( $atu->pcs2forte('[ 0,7,4 ]'), '3-11', 'PCS to Forte redux 3' );
+is( $atu->pcs2forte('[ 4,1,8 ]'), '3-11', 'PCS to Forte redux 4' );
 
 $deeply->( $atu->pcs2intervals( [qw/0 1 3/] ), [qw/1 2/], 'pcs2intervals' );
 

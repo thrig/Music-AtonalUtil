@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx lastidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.71';
+our $VERSION = '0.72';
 
 my $DEG_IN_SCALE = 12;
 
