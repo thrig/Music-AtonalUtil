@@ -685,7 +685,8 @@ sub normal_form {
   croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
   croak 'pitch set must contain something' if !@$pset;
 
-  my @nset = sort { $a <=> $b } uniq @$pset;
+  my @nset = sort { $a <=> $b }
+    uniq map { my $s = $_ % $self->{_DEG_IN_SCALE}; $s } @$pset;
 
   return \@nset if @nset == 1;
 
@@ -790,10 +791,9 @@ sub pitch2intervalclass {
     : $pitch;
 }
 
-# Forte has names for prime forms (3-1 and suchlike) though these do not
-# appear to have any easily automated prime form to name algorithm, so
-# they will not be supported until someone provides patches or I need to
-# learn more about them.
+# TODO does 0 3+12 7+24 map out properly via this code? or %= scale_deg req?
+# TODO means to preserve what actual pitch(es) correspond to what prime form
+# number? so can say "pitch 48" is the "0" of a prime form 0,3,7, etc.
 sub prime_form {
   my ( $self, $pset ) = @_;
 
@@ -1226,12 +1226,16 @@ reference. Does not advance the index.
 
 =item B<normal_form> I<pitch_set>
 
-Returns the normal form of the passed pitch set, via a "packed from the
-right" method outlined in the www.mta.ca link, below, so may return
-different normal forms than the Allen Forte method. There is stub code
-for the Allen Forte method in this module, though I lack enough
-information to verify if that code is correct. (The Forte Numbers on
-Wikipedia match that of the www.mta.ca link method.)
+Returns the normal form of the passed pitch set as an array reference.
+Uses raw pitch numbers; that is, it does not reduce the pitch numbers to
+within B<scale_degrees>.
+
+The "packed from the right" method outlined in the www.mta.ca link
+(L</"SEE ALSO">) is employed, so may return different normal forms than
+the Allen Forte method. There is stub code for the Allen Forte method in
+this module, though I lack enough information to verify if that code is
+correct. The Forte Numbers on Wikipedia match that of the www.mta.ca
+link method.
 
 =item B<pcs2forte> I<pitch_set>
 

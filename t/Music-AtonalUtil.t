@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 61;
+use Test::More tests => 62;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -92,6 +92,14 @@ is_deeply(
   $atu->normal_form( [ 8, 10, 2, 4 ] ),
   [ 2, 4, 8, 10 ],
   'normal form lowest number fallthrough'
+);
+
+is_deeply(
+  $atu->normal_form(
+    [ map { my $s = $_ + 24; $s } 6, 6, 7, 2, 2, 1, 3, 3, 3 ]
+  ),
+  [ 1, 2, 3, 6, 7 ],
+  'normal form non-base-register pitches'
 );
 
 is( $atu->pcs2forte('0,1,3,4,7,8'),   '6-z19', 'PCS string to Forte 1' );
