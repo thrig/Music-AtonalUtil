@@ -1376,7 +1376,11 @@ L<http://github.com/thrig/Music-AtonalUtil>
 =head2 Known Issues
 
 Poor naming conventions and standards of underlying music theory and any
-associated mistakes in understanding thereof by the author.
+associated mistakes in understanding thereof by the author. Also, would
+be nice to deal with a "Pitch" object that knows how to return the pitch
+modulus the C<scale_degrees> via some method, to avoid repeated calls
+doing the modulus foo (but that would likely entail a Project that would
+unify a whole bunch of C<Music::*> modules).
 
 =head1 SEE ALSO
 
