@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx lastidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '0.72';
+our $VERSION = '1.00';
 
 my $DEG_IN_SCALE = 12;
 
@@ -447,36 +447,9 @@ my $PCS2FORTE = {
 #
 # SUBROUTINES
 
-sub new {
-  my ( $class, %param ) = @_;
-  my $self = {};
-
-  $self->{_DEG_IN_SCALE} = int( $param{DEG_IN_SCALE} // $DEG_IN_SCALE );
-  if ( $self->{_DEG_IN_SCALE} < 2 ) {
-    croak 'degrees in scale must be greater than one';
-  }
-
-  if ( exists $param{lastn} ) {
-    croak 'lastn must be number' unless looks_like_number $param{lastn};
-    $self->{_lastn} = $param{lastn};
-  } else {
-    $self->{_lastn} = 2;
-  }
-
-  # XXX packing not implemented beyond "right" method (via www.mta.ca docs)
-  $self->{_packing} = $param{PACKING} // 'right';
-
-  bless $self, $class;
-  return $self;
-}
-
-########################################################################
-#
-# Methods of Music
-
 sub circular_permute {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
   croak 'pitch set must contain something' if !@$pset;
 
   my @perms;
@@ -489,60 +462,24 @@ sub circular_permute {
 }
 
 sub complement {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
   my %seen;
   @seen{@$pset} = ();
   return [ grep { !exists $seen{$_} } 0 .. $self->{_DEG_IN_SCALE} - 1 ];
 }
 
-# Utility, "mirrors" a pitch to be within supplied min/max values as
-# appropriate for how many times the pitch "reflects" back within those
-# limits, which will depend on which limit is broken and by how much.
-sub reflect_pitch {
-  my ( $self, $v, $min, $max ) = @_;
-  croak 'pitch must be a number' if !looks_like_number $v;
-  croak 'limits must be numbers and min less than max'
-    if !looks_like_number $min
-    or !looks_like_number $max
-    or $min >= $max;
-  return $v if $v <= $max and $v >= $min;
-
-  my ( @origins, $overshoot, $direction );
-  if ( $v > $max ) {
-    @origins   = ( $max, $min );
-    $overshoot = abs( $v - $max );
-    $direction = -1;
-  } else {
-    @origins   = ( $min, $max );
-    $overshoot = abs( $min - $v );
-    $direction = 1;
-  }
-  my $range    = abs( $max - $min );
-  my $register = int( $overshoot / $range );
-  if ( $register % 2 == 1 ) {
-    @origins = reverse @origins;
-    $direction *= -1;
-  }
-  my $remainder = $overshoot % $range;
-
-  return $origins[0] + $remainder * $direction;
-}
+sub fnums { $FORTE2PCS }
 
 sub forte2pcs {
   my ( $self, $forte_number ) = @_;
   return $FORTE2PCS->{ lc $forte_number };
 }
 
-sub fnums {
-  my ($self) = @_;
-  return $FORTE2PCS;
-}
-
 sub interval_class_content {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
   my @nset = sort { $a <=> $b } uniq @$pset;
   croak 'pitch set must contain at least two elements' if @nset < 2;
@@ -567,23 +504,25 @@ sub interval_class_content {
 }
 
 sub intervals2pcs {
-  my ( $self, $iset, $start_pitch ) = @_;
-  $start_pitch //= 0;
-
-  croak 'interval set must be array ref' unless ref $iset eq 'ARRAY';
+  my $self        = shift;
+  my $start_pitch = shift;
+  my $iset        = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
   croak 'interval set must contain something' if !@$iset;
+
+  $start_pitch //= 0;
+  $start_pitch = int $start_pitch;
 
   my @pset = $start_pitch;
   for my $i (@$iset) {
-    push @pset, $pset[-1] + $i;
+    push @pset, ( $pset[-1] + $i ) % $self->{_DEG_IN_SCALE};
   }
 
   return \@pset;
 }
 
 sub invariance_matrix {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
   croak 'pitch set must contain something' if !@$pset;
 
   my @ivm;
@@ -597,10 +536,13 @@ sub invariance_matrix {
 }
 
 sub invert {
-  my ( $self, $pset, $axis ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $axis = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
   croak 'pitch set must contain something' if !@$pset;
+
   $axis //= 0;
+  $axis = int $axis;
 
   my @inverse = @$pset;
   for my $p (@inverse) {
@@ -630,10 +572,13 @@ sub lastn {
 }
 
 sub multiply {
-  my ( $self, $pset, $factor ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self   = shift;
+  my $factor = shift;
+  my $pset   = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
   croak 'pitch set must contain something' if !@$pset;
+
   $factor //= 1;
+  $factor = int $factor;
 
   return [ map { my $p = $_ * $factor % $self->{_DEG_IN_SCALE}; $p } @$pset ];
 }
@@ -679,16 +624,43 @@ sub multiply {
   }
 }
 
-sub normal_form {
-  my ( $self, $pset ) = @_;
+sub new {
+  my ( $class, %param ) = @_;
+  my $self = {};
 
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  $self->{_DEG_IN_SCALE} = int( $param{DEG_IN_SCALE} // $DEG_IN_SCALE );
+  if ( $self->{_DEG_IN_SCALE} < 2 ) {
+    croak 'degrees in scale must be greater than one';
+  }
+
+  if ( exists $param{lastn} ) {
+    croak 'lastn must be number' unless looks_like_number $param{lastn};
+    $self->{_lastn} = $param{lastn};
+  } else {
+    $self->{_lastn} = 2;
+  }
+
+  # XXX packing not implemented beyond "right" method (via www.mta.ca docs)
+  $self->{_packing} = $param{PACKING} // 'right';
+
+  bless $self, $class;
+  return $self;
+}
+
+sub normal_form {
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
   croak 'pitch set must contain something' if !@$pset;
 
-  my @nset = sort { $a <=> $b }
-    uniq map { my $s = $_ % $self->{_DEG_IN_SCALE}; $s } @$pset;
-
-  return \@nset if @nset == 1;
+  my %origmap;
+  for my $p (@$pset) {
+    push @{ $origmap{ $p % $self->{_DEG_IN_SCALE} } }, $p;
+  }
+  if ( keys %origmap == 1 ) {
+    return [ keys %origmap ], \%origmap;
+  }
+  my @nset = sort { $a <=> $b } keys %origmap;
 
   my $equivs = $self->circular_permute( \@nset );
   my @order  = 1 .. $#nset;
@@ -704,7 +676,7 @@ sub normal_form {
     # plus a prime_form call on those pitch sets shows no changes caused
     # by the default 'right' packing method, so sticking with it until
     # learn otherwise.
-    die 'left packing method not yet implemented';
+    die 'left packing method not yet implemented (sorry)';
   } else {
     croak 'unknown packing method (try the "right" one)';
   }
@@ -740,37 +712,25 @@ sub normal_form {
     @normal = @{ $equivs->[0] };
   }
 
-  return \@normal;
+  return \@normal, \%origmap;
 }
 
 sub pcs2forte {
-  my ( $self, $pset ) = @_;
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  if ( !ref $pset ) {
-    my @pitches = $pset =~ m/(\d+)/g;
-    for my $p (@pitches) {
-      $p %= $self->{_DEG_IN_SCALE};
-    }
-    $pset = \@pitches;
-  }
+  croak 'pitch set must contain something' if !@$pset;
 
-  if ( ref $pset eq 'ARRAY' ) {
-    croak 'pitch set must contain something' if !@$pset;
-    $pset = $self->prime_form($pset);
-    $pset = join ',', @$pset;
-  } else {
-    croak 'pitch set must be array ref or string';
-  }
-
+  $pset = $self->prime_form($pset);
+  $pset = join ',', @$pset;
   return $PCS2FORTE->{$pset};
 }
 
 sub pcs2intervals {
-  my ( $self, $pset ) = @_;
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  if ( !defined $pset or ref $pset ne 'ARRAY' or @$pset < 2 ) {
-    croak 'pitch set must contain at least two elements' if !@$pset;
-  }
+  croak 'pitch set must contain at least two elements' if @$pset < 2;
 
   my @intervals;
   for my $i ( 1 .. $#{$pset} ) {
@@ -791,21 +751,18 @@ sub pitch2intervalclass {
     : $pitch;
 }
 
-# TODO does 0 3+12 7+24 map out properly via this code? or %= scale_deg req?
-# TODO means to preserve what actual pitch(es) correspond to what prime form
-# number? so can say "pitch 48" is the "0" of a prime form 0,3,7, etc.
 sub prime_form {
-  my ( $self, $pset ) = @_;
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
   croak 'pitch set must contain something' if !@$pset;
 
-  my @forms = $self->normal_form($pset);
-  push @forms, $self->normal_form( $self->invert( $forms[0] ) );
+  my @forms = ( $self->normal_form($pset) )[0];
+  push @forms, ( $self->normal_form( $self->invert( 0, $forms[0] ) ) )[0];
 
-  for my $s (@forms) {
-    $s = $self->transpose( $s, $self->{_DEG_IN_SCALE} - $s->[0] )
-      if $s->[0] != 0;
+  for my $set (@forms) {
+    $set = $self->transpose( $self->{_DEG_IN_SCALE} - $set->[0], $set )
+      if $set->[0] != 0;
   }
 
   my @prime;
@@ -831,25 +788,62 @@ sub prime_form {
   if ( !@prime ) {
     use Data::Dumper;
     warn Dumper \@forms;
-    die "TODO oh noes";
+    die "XXX oh noes";
   }
 
   return \@prime;
 }
 
+# Utility, "mirrors" a pitch to be within supplied min/max values as
+# appropriate for how many times the pitch "reflects" back within those
+# limits, which will depend on which limit is broken and by how much.
+sub reflect_pitch {
+  my ( $self, $v, $min, $max ) = @_;
+  croak 'pitch must be a number' if !looks_like_number $v;
+  croak 'limits must be numbers and min less than max'
+    if !looks_like_number $min
+    or !looks_like_number $max
+    or $min >= $max;
+  return $v if $v <= $max and $v >= $min;
+
+  my ( @origins, $overshoot, $direction );
+  if ( $v > $max ) {
+    @origins   = ( $max, $min );
+    $overshoot = abs( $v - $max );
+    $direction = -1;
+  } else {
+    @origins   = ( $min, $max );
+    $overshoot = abs( $min - $v );
+    $direction = 1;
+  }
+  my $range    = abs( $max - $min );
+  my $register = int( $overshoot / $range );
+  if ( $register % 2 == 1 ) {
+    @origins = reverse @origins;
+    $direction *= -1;
+  }
+  my $remainder = $overshoot % $range;
+
+  return $origins[0] + $remainder * $direction;
+}
+
 sub retrograde {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
   croak 'pitch set must contain something' if !@$pset;
+
   return [ reverse @$pset ];
 }
 
 sub rotate {
-  my ( $self, $pset, $r ) = @_;
+  my $self = shift;
+  my $r    = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
   croak 'rotate value must be integer'
     if !defined $r
     or $r !~ /^-?\d+$/;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
   croak 'pitch set must contain something' if !@$pset;
 
   my @rot;
@@ -865,23 +859,23 @@ sub rotate {
 }
 
 # Utility method to rotate a list to a named element (for example "gis"
-# in a list of note names, see etude no.2 for results of heavy use of
+# in a list of note names, see my etude no.2 for results of heavy use of
 # such rotations).
 sub rotateto {
-  my ( $self, $pset, $what, $dir ) = @_;
+  my $self = shift;
+  my $what = shift;
+  my $dir  = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  croak 'nothing to rotate on'
-    unless defined $pset
-    and ref $pset eq 'ARRAY'
-    and @$pset;
   croak 'nothing to search on' unless defined $what;
+  croak 'nothing to rotate on' if !@$pset;
 
   $dir //= 1;
   my $method = $dir < 0 ? \&lastidx : \&firstidx;
 
   my $index = $method->( sub { $_ eq $what }, @$pset );
   croak "no such element $what" if $index == -1;
-  return $self->rotate( $pset, -$index );
+  return $self->rotate( -$index, $pset );
 }
 
 # XXX probably should disallow changing this on the fly, esp. if allow
@@ -899,12 +893,13 @@ sub scale_degrees {
 }
 
 sub set_complex {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
   croak 'pitch set must contain something' if !@$pset;
 
-  my $iset = $self->invert($pset);
-  my $dis  = $self->scale_degrees;
+  my $iset = $self->invert( 0, $pset );
+  my $dis = $self->scale_degrees;
 
   my @plex = $pset;
   for my $i ( 1 .. $#$pset ) {
@@ -921,13 +916,24 @@ sub set_complex {
 }
 
 sub subsets {
-  my ( $self, $pset, $len ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
-  my @nset = uniq @$pset;
-  croak 'pitch set must be larger than 1 element' unless @nset > 1;
-  croak 'invalid length' if defined $len and ( $len < 1 or $len > @nset );
+  my $self = shift;
+  my $len  = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  $len ||= @nset - 1;
+  my @nset = uniq map { my $p = $_ % $self->{_DEG_IN_SCALE}; $p } @$pset;
+  croak 'pitch set must contain two or more unique pitches' if @nset < 2;
+  if ( defined $len ) {
+    croak 'length must be less than size of pitch set (but not zero)'
+      if $len >= @nset
+      or $len == 0;
+    if ( $len < 0 ) {
+      $len = @nset + $len;
+      croak 'negative length exceeds magnitude of pitch set' if $len < 1;
+    }
+  } else {
+    $len = @nset - 1;
+  }
+
   my $p = Algorithm::Permute->new( \@nset, $len );
 
   my ( @subsets, %seen );
@@ -938,8 +944,9 @@ sub subsets {
 }
 
 sub tcis {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
   croak 'pitch set must contain something' if !@$pset;
 
   my %seen;
@@ -948,7 +955,7 @@ sub tcis {
   my @tcis;
   for my $i ( 0 .. $self->{_DEG_IN_SCALE} - 1 ) {
     $tcis[$i] = 0;
-    for my $p ( @{ $self->transpose_invert( $pset, $i ) } ) {
+    for my $p ( @{ $self->transpose_invert( $i, 0, $pset ) } ) {
       $tcis[$i]++ if exists $seen{$p};
     }
   }
@@ -956,8 +963,9 @@ sub tcis {
 }
 
 sub tcs {
-  my ( $self, $pset ) = @_;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
   croak 'pitch set must contain something' if !@$pset;
 
   my %seen;
@@ -966,7 +974,7 @@ sub tcs {
   my @tcs = scalar @$pset;
   for my $i ( 1 .. $self->{_DEG_IN_SCALE} - 1 ) {
     $tcs[$i] = 0;
-    for my $p ( @{ $self->transpose( $pset, $i ) } ) {
+    for my $p ( @{ $self->transpose( $i, $pset ) } ) {
       $tcs[$i]++ if exists $seen{$p};
     }
   }
@@ -974,15 +982,14 @@ sub tcs {
 }
 
 sub transpose {
-  my ( $self, $pset, $t ) = @_;
-  croak 'transpose value must be integer'
-    if !defined $t
-    or $t !~ /^-?\d+$/;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
-  croak 'pitch set must contain something' if !@$pset;
+  my $self = shift;
+  my $t    = shift;
+  my @tset = ref $_[0] eq 'ARRAY' ? @{ $_[0] } : @_;
 
-  my @tset = @$pset;
+  croak 'transpose value not set' if !defined $t;
+  croak 'pitch set must contain something' if !@tset;
 
+  $t = int $t;
   for my $p (@tset) {
     $p = ( $p + $t ) % $self->{_DEG_IN_SCALE};
   }
@@ -990,16 +997,18 @@ sub transpose {
 }
 
 sub transpose_invert {
-  my ( $self, $pset, $t, $axis ) = @_;
-  croak 'transpose value must be integer'
-    if !defined $t
-    or $t !~ /^-?\d+$/;
-  croak 'pitch set must be array ref' unless ref $pset eq 'ARRAY';
+  my $self = shift;
+  my $t    = shift;
+  my $axis = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
+  croak 'transpose value not set' if !defined $t;
   croak 'pitch set must contain something' if !@$pset;
+
   $axis //= 0;
+  my $tset = $self->invert( $axis, $pset );
 
-  my $tset = $self->invert( $pset, $axis );
-
+  $t = int $t;
   for my $p (@$tset) {
     $p = ( $p + $t ) % $self->{_DEG_IN_SCALE};
   }
@@ -1053,7 +1062,11 @@ Music::AtonalUtil - atonal music analysis and composition
   use Music::AtonalUtil ();
   my $atu = Music::AtonalUtil->new;
 
-Then see below for methods.
+  my $nf = $atu->normal_form([0,3,7]);
+  my $pf = $atu->prime_form(0, 4, 7);
+  ...
+
+Though see below for the (many) other methods.
 
 =head1 DESCRIPTION
 
@@ -1070,25 +1083,16 @@ with other software or documentation available.
 
 =head1 METHODS
 
-By default, a 12-tone system is assumed. Input values are (often) not
-checked whether they reside inside this space. Most methods accept a
-pitch set (an array reference consisting of a list of pitch numbers),
-and most return new array references containing the results of the
-operation. Some basic sanity checking is done on the input, which may
-cause the code to B<croak> if something is awry. Elements of the pitch
-sets are not checked whether they reside inside the 12-tone basis
-(pitch numbers through 11), so input data may need to be first reduced
-as follows:
-
-  my $atu = Music::AtonalUtil->new;
-
-  my $pitch_set = [25,18,42,5];
-  for my $p (@$pitch_set) { $p %= $atu->scale_degrees }
-
-  say "Result: @$pitch_set";      # Result: 1 6 6 5
+By default, a 12-tone system is assumed. Input values are (hopefully)
+mapped to reside inside this space where necessary. Most methods accept
+a pitch set (an array reference consisting of a list of pitch numbers,
+or just a list of such numbers), and most return array references
+containing the results. Some (but not much) sanity checking is done on
+the input, which may cause the code to B<croak> if something is awry.
 
 Results from the various methods should reside within the
-B<scale_degrees>, unless the method returns something else.
+B<scale_degrees>, unless the method returns something else. Integer math
+is (often) assumed.
 
 =over 4
 
@@ -1100,12 +1104,13 @@ Constructor. The degrees in the scale can be adjusted via:
 
 or some other positive integer greater than one, to use a non-12-tone
 basis for subsequent method calls. This value can be set or inspected
-via the B<scale_degrees> call. Note that while non-12-tone systems are
-in theory supported, they have not really been tested.
+via the B<scale_degrees> call. B<Note that while non-12-tone systems are
+in theory supported, they have not really been tested.>
 
 =item B<circular_permute> I<pitch_set>
 
-Takes a pitch set, and returns an array reference of pitch set
+Takes a pitch set (array reference to list of pitches or just a
+list of such), and returns an array reference of pitch set
 references as follows:
 
   $atu->circular_permute([1,2,3]);   # [[1,2,3],[2,3,1],[3,1,2]]
@@ -1113,28 +1118,31 @@ references as follows:
 This is used by the B<normal_form> method, internally. This permutation
 is identical to inversions in tonal theory, but is different from the
 B<invert> method offered by this module. See also B<rotate> to rotate a
-pitch set by a particular amount.
+pitch set by a particular amount, or B<rotateto> to search for something
+to rotate to.
 
 =item B<complement> I<pitch_set>
 
-Returns the pitches of the scale degrees not set in the passed
-pitch set.
+Returns the pitches of the scale degrees not set in the passed pitch set
+(an array reference to list of pitches or just a list of such).
 
   $atu->complement([1,2,3]);    # [0,4,5,6,7,8,9,10,11]
 
 Calling B<prime_form> on the result will find the abstract complement of
-the original set.
-
-=item B<forte2pcs> I<forte_number>
-
-Given a Forte Number (such as C<6-z44> or C<6-Z44>), returns the
-corresponding pitch set as an array reference, or nothing if an unknown
-Forte Number is supplied.
+the original set, whatever that means.
 
 =item B<fnums>
 
 Returns hash reference of which keys are Forte Numbers and values are
-array references to the corresponding pitch sets.
+array references to the corresponding pitch sets. This reference should
+perhaps not be fiddled with, unless the fiddler desires different
+results for the B<forte2pcs> and B<pcs2forte> calls.
+
+=item B<forte2pcs> I<forte_number>
+
+Given a Forte Number (such as C<6-z44> or C<6-Z44>), returns the
+corresponding pitch set as an array reference, or C<undef> if an unknown
+Forte Number is supplied.
 
 =item B<interval_class_content> I<pitch_set>
 
@@ -1148,56 +1156,57 @@ absolute pitch-class interval (APIC) vector:
 
 L<https://en.wikipedia.org/wiki/Interval_vector>
 
-Uses include an indication of invariance under transposition; see the
-B<invariants> mode of C<atonal-util> of L<App::MusicTools> for the
+Uses include an indication of invariance under transposition; see also
+the B<invariants> mode of C<atonal-util> of L<App::MusicTools> for the
 display of invariant pitches.
 
-=item B<intervals2pcs> I<pitch_set>, [I<start_pitch>]
+=item B<intervals2pcs> I<start_pitch>, I<interval_set>
 
-Given a list of intervals and an optional starting pitch, converts those
-intervals into a pitch set, and returns an array reference to that. The
-start pitch is 0 if unset.
+Given a starting pitch (set to C<0> if unsure) and an interval set (a
+list of intervals or array reference of such), converts those intervals
+into a pitch set, returned as an array reference.
 
 =item B<invariance_matrix> I<pitch_set>
 
 Returns reference to an array of references that comprise the invariance
 under Transpose(N)Inversion operations on the given pitch set. Probably
 easier to use the B<invariants> mode of C<atonal-util> of
-L<App::MusicTools>.
+L<App::MusicTools>, unless you know what you are doing.
 
-=item B<invert> I<pitch_set>, I<optional_axis>
+=item B<invert> I<axis>, I<pitch_set>
 
-Inverts the given pitch set, by default around the 0 axis, within the
-degrees in scale. Returns resulting pitch set as an array reference.
-Some examples or styles assume rotation with an axis of 6, for example:
+Inverts the given pitch set, within the degrees in scale. Set the
+I<axis> to C<0> if unsure. Returns resulting pitch set as an array
+reference. Some examples or styles assume rotation with an axis of C<6>,
+for example:
 
 L<https://en.wikipedia.org/wiki/Set_%28music%29#Serial>
 
 Has the "retrograde-inverse transposition" of C<0 11 3> becoming C<4 8
 7>. This can be reproduced via:
 
-  my $p = $atu->retrograde([0,11,3]);
-  $p = $atu->invert($p, 6);
-  $p = $atu->transpose($p, 1);
+  my $p = $atu->retrograde(0,11,3);
+  $p = $atu->invert(6, $p);
+  $p = $atu->transpose(1, $p);
 
 =item B<lastn> I<array_ref>, I<n>
 
-Returns the last N elements of the supplied array reference, or the
-entire list if N exceeds the number of elements available. Returns
-nothing if the array reference is empty, but otherwise will throw an
-exception if something is awry.
+Utility method. Returns the last N elements of the supplied array
+reference, or the entire list if N exceeds the number of elements
+available. Returns nothing if the array reference is empty, but
+otherwise will throw an exception if something is awry.
 
-=item B<multiply> I<pitch_set>, I<factor>
+=item B<multiply> I<factor>, I<pitch_set>
 
 Multiplies the supplied pitch set by the given factor, modulates the
-results by the B<scale_degrees> setting (by default 12), and returns the
-results as an array reference.
+results by the B<scale_degrees> setting, and returns the results as an
+array reference.
 
 =item B<nexti> I<array ref>
 
-Returns the next item from the supplied array reference. Loops around
-to the beginning of the list if the bounds of the array are exceeded.
-Caches the index for subsequent lookups. Part of the B<geti>,
+Utility method. Returns the next item from the supplied array reference.
+Loops around to the beginning of the list if the bounds of the array are
+exceeded. Caches the index for subsequent lookups. Part of the B<geti>,
 B<nexti>, B<reseti>, B<seti>, and B<whati> set of routines, which are
 documented here:
 
@@ -1226,9 +1235,33 @@ reference. Does not advance the index.
 
 =item B<normal_form> I<pitch_set>
 
-Returns the normal form of the passed pitch set as an array reference.
-Uses raw pitch numbers; that is, it does not reduce the pitch numbers to
-within B<scale_degrees>.
+Returns two values; first, the normal form of the passed pitch set as an
+array reference, and secondly, a hash reference linking the normal form
+values to array references containing the input pitch numbers those
+normal form values represent. An example may clarify:
+
+  my ($ps, $lookup) = $atu->normal_form(60, 64, 67, 72); # c' e' g' c''
+
+=over
+
+=item *
+
+C<$ps> is C<[0,4,7]>, as C<60> and C<72> are equivalent pitches, so both
+get mapped to C<0>.
+
+=item *
+
+C<$lookup> contains hash keys C<0>, C<4>, and C<7>, where C<4> points to
+an array reference containing C<64>, C<7> to an array reference
+containing C<67>, and C<0> an array reference containing both C<60> and
+C<72>. This allows software to answer "what original pitches of
+the input are X" type questions.
+
+=back
+
+Use the following to select just the normal form array reference:
+
+  my $just_the_nf_thanks = ($atu->normal_form(...))[0];
 
 The "packed from the right" method outlined in the www.mta.ca link
 (L</"SEE ALSO">) is employed, so may return different normal forms than
@@ -1239,15 +1272,9 @@ link method.
 
 =item B<pcs2forte> I<pitch_set>
 
-Given a pitch set, returns the Forte Number of that set.
-
-  $atu->pcs2forte([qw/0 1 2 5 6 9/]);  # array ref form
-
-  $atu->pcs2forte('[0,1,2,5,6,9]');    # string forms are okay
-  $atu->pcs2forte('0,1,2,5,6,9');      # as well
-
-The Forte Numbers use lowercase C<z>, for example C<6-z44>. An undefined
-value will be returned if no Forte Number exists for the pitch set.
+Given a pitch set, returns the Forte Number of that set. The Forte
+Numbers use lowercase C<z>, for example C<6-z44>. C<undef> will be
+returned if no Forte Number exists for the pitch set.
 
 =item B<pcs2intervals> I<pitch_set>
 
@@ -1264,13 +1291,13 @@ system). Used internally by the B<interval_class_content> method.
 =item B<prime_form> I<pitch_set>
 
 Returns the prime form of a given pitch set (via B<normal_form> and
-various other operations on the passed pitch set).
+various other operations on the passed pitch set) as an array reference.
 
 =item B<reflect_pitch> I<pitch>, I<min>, I<max>
 
-Constrains the supplied pitch to reside within the supplied minimum and
-maximum limits, by "reflecting" the pitch back off the limits. For
-example, given the min and max limits of 6 and 12:
+Utility method. Constrains the supplied pitch to reside within the
+supplied minimum and maximum limits, by "reflecting" the pitch back off
+the limits. For example, given the min and max limits of 6 and 12:
 
   pitch  ... 10 11 12 13 14 15 16 17 18 19 20 21 ...
   result ... 10 11 12 11 10  9  8  7  6  7  8  9 ...
@@ -1281,24 +1308,25 @@ produces a sawtooth pattern with occasional leaps).
 
 =item B<retrograde> I<pitch_set>
 
-Fancy term for the reverse of a list. Returns reference to array of said
-reversed data.
+Fancy term for the C<reverse> of a list. Returns reference to array of
+said reversed list.
 
-=item B<rotate> I<pitch_set>, I<rotate_by>
+=item B<rotate> I<rotate_by>, I<pitch_set>
 
 Rotates the members given pitch set by the given integer. Returns an
 array reference of the resulting pitch set. (B<circular_permute>
 performs all the possible rotations for a pitch set.)
 
-=item B<rotateto> I<pitch_set>, I<what>, [ I<dir> ]
+=item B<rotateto> I<what>, I<dir>, I<pitch_set>
 
-Rotates (via B<rotate>) a given array reference to the named element
-(using string comparisons). Returns array reference of the thus
-rotated set. Throws an exception if anything goes wrong with the input
-or search.
+Utility method. Rotates (via B<rotate>) a given array reference to the
+desired element I<what> (using string comparisons). Returns an array
+reference of the thus rotated set. Throws an exception if anything goes
+wrong with the input or search.
 
-I<what> is searched for from the first element on up. Append a negative
-I<dir> to the argument list to invert the direction of the search.
+I<what> is searched for from the first element and subsequent elements,
+assuming a positive I<dir> value. Set a negative I<dir> to invert the
+direction of the search.
 
 =item B<scale_degrees> I<optional_integer>
 
@@ -1317,14 +1345,17 @@ reference to the resulting array of arrays.
 Ideally the first pitch of the input pitch set should be 0 (so the input
 may need reduction to B<prime_form> first).
 
-=item B<subsets> I<pitch_set>, I<optional_length>
+=item B<subsets> I<length>, I<pitch_set>
 
-Returns the subsets of a given pitch set, of default length one less
-than the magnitude of the input pitch set (that is, whatever two element
-pitch sets exist for a given three element pitch set). The custom length
-allows subsets of C<1 <= len <= magnitude_of_pitch_set> results to be
-returned, for example three element pitch subsets of a given five
-element pitch set.
+Returns the subsets of a given pitch set. I<length> should be, say, C<-1>
+to select for pitch sets of one element less, or a positive value of
+a magnitude less than the pitch set to reduce to a specific size.
+
+  $atu->subsets(-1, [0,3,7])  # different ways to say same thing
+  $atu->subsets( 2, [0,3,7])
+
+It may make sense to first run the I<pitch_set> through B<normal_form>
+or B<prime_form> to normalize the data. Or not, depending.
 
 The underlying permutation library might sort or otherwise return the
 results in arbitrary orderings. Sorry about that.
@@ -1341,15 +1372,16 @@ question, how many common tones there are with the original set.
 Like B<tcs>, except uses B<transpose_invert> instead of just
 B<transpose>.
 
-=item B<transpose> I<pitch_set>, I<integer>
+=item B<transpose> I<transpose_by>, I<pitch_set>
 
-Transposes the given pitch set by the given integer value. Returns the
-result as an array reference.
+Transposes the given pitch set by the given integer value in
+I<transpose_by>. Returns the result as an array reference.
 
-=item B<transpose_invert> I<pitch_set>, I<integer>
+=item B<transpose_invert> I<transpose_by>, I<axis>, I<pitch_set>
 
-Performs B<invert> on given pitch set, then transposition as per
-B<transpose>. Returns the result as an array reference.
+Performs B<invert> on given pitch set (set I<axis> to C<0> if unsure),
+then transposition as per B<transpose>. Returns the result as an array
+reference.
 
 =item B<variances> I<pitch_set1>, I<pitch_set2>
 
@@ -1364,6 +1396,17 @@ B<interval_class_content>, false if not.
 
 =back
 
+=head1 CHANGES
+
+Version 1.0 reordered and otherwise mucked around with calling
+conventions (mostly to allow either an array reference or a list of
+values for pitch sets), but not the return values. Except for
+B<normal_form>, which obtained additional return values, so you can
+figure out which of the input pitches map to what (a feature handy for
+L<Music::NeoRiemannianTonnetz> related operations, or so I hope).
+
+Otherwise I generally try not to break the interface. Except when I do.
+
 =head1 BUGS
 
 =head2 Reporting Bugs
@@ -1375,12 +1418,14 @@ L<http://github.com/thrig/Music-AtonalUtil>
 
 =head2 Known Issues
 
-Poor naming conventions and standards of underlying music theory and any
-associated mistakes in understanding thereof by the author. Also, would
-be nice to deal with a "Pitch" object that knows how to return the pitch
-modulus the C<scale_degrees> via some method, to avoid repeated calls
-doing the modulus foo (but that would likely entail a Project that would
-unify a whole bunch of C<Music::*> modules).
+Poor naming conventions and vague and conflicting standards of music
+theory on top of any mistakes in understanding thereof by the author.
+
+Also, it would be nice to deal with a "Pitch" object that knows how to
+return the pitch modulus the C<scale_degrees> via some method (but that
+would likely entail a Project that would unify a whole bunch of
+C<Music::*> modules into some grand unified PerlMusic thingy, though I
+am busy doing other things, so will not be writing that).
 
 =head1 SEE ALSO
 

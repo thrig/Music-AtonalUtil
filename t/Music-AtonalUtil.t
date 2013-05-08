@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 62;
+use Test::More tests => 61;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -53,12 +53,12 @@ is_deeply(
 );
 
 $deeply->(
-  $atu->intervals2pcs( [qw/4 3 -1 1 5/] ),
-  [qw/0 4 7 6 7 12/], 'intervals2pcs'
+  $atu->intervals2pcs( 0, [qw/4 3 -1 1 5/] ),
+  [qw/0 4 7 6 7 0/], 'intervals2pcs'
 );
 
 $deeply->(
-  $atu->intervals2pcs( [qw/7 -4 -3/], 2 ),
+  $atu->intervals2pcs( 2, [qw/7 -4 -3/] ),
   [qw/2 9 5 2/], 'intervals2pcs custom start'
 );
 
@@ -68,49 +68,53 @@ is_deeply(
   'invariance matrix'
 );
 
-is_deeply( $atu->invert( [ 0, 4, 7 ] ), [ 0, 8, 5 ], 'invert something' );
+is_deeply( $atu->invert( 0, [ 0, 4, 7 ] ), [ 0, 8, 5 ], 'invert something' );
 
 is_deeply(
-  $atu->multiply( [ 10, 9, 0, 11 ], 5 ),
+  $atu->multiply( 5, [ 10, 9, 0, 11 ] ),
   [ 2, 9, 0, 7 ],
   'multiply something'
 );
 
 is_deeply(
-  $atu->normal_form( [ 6, 6, 7, 2, 2, 1, 3, 3, 3 ] ),
+  ( $atu->normal_form( [ 6, 6, 7, 2, 2, 1, 3, 3, 3 ] ) )[0],
   [ 1, 2, 3, 6, 7 ],
   'normal form'
 );
 
 is_deeply(
-  $atu->normal_form( [ 1, 4, 7, 8, 10 ] ),
+  ( $atu->normal_form( [ 1, 4, 7, 8, 10 ] ) )[0],
   [ 7, 8, 10, 1, 4 ],
   'normal form compactness'
 );
 
 is_deeply(
-  $atu->normal_form( [ 8, 10, 2, 4 ] ),
+  ( $atu->normal_form( [ 8, 10, 2, 4 ] ) )[0],
   [ 2, 4, 8, 10 ],
   'normal form lowest number fallthrough'
 );
 
 is_deeply(
-  $atu->normal_form(
-    [ map { my $s = $_ + 24; $s } 6, 6, 7, 2, 2, 1, 3, 3, 3 ]
-  ),
+  ( $atu->normal_form(
+      [ map { my $s = $_ + 24; $s } 6, 6, 7, 2, 2, 1, 3, 3, 3 ]
+    )
+  )[0],
   [ 1, 2, 3, 6, 7 ],
   'normal form non-base-register pitches'
 );
 
-is( $atu->pcs2forte('0,1,3,4,7,8'),   '6-z19', 'PCS string to Forte 1' );
-is( $atu->pcs2forte('[0,1,3,4,7,8]'), '6-z19', 'PCS string to Forte 2' );
+is_deeply(
+  [ $atu->normal_form( 0, 4, 7, 12 ) ],
+  [ [ 0, 4, 7 ], { 0 => [ 0, 12 ], 4 => [4], 7 => [7] } ],
+  'normal form <c e g c>'
+);
+
 is( $atu->pcs2forte( [ 0, 1, 3, 4, 7, 8 ] ), '6-z19', 'PCS to Forte 1' );
 is( $atu->pcs2forte( [qw/6 5 4 1 0 9/] ), '6-z44', 'PCS to Forte 2' );
 
-is( $atu->pcs2forte( [ 0, 7, 4 ] ), '3-11', 'PCS to Forte redux 1' );
-is( $atu->pcs2forte( [ 4, 1, 8 ] ), '3-11', 'PCS to Forte redux 2' );
-is( $atu->pcs2forte('[ 0,7,4 ]'), '3-11', 'PCS to Forte redux 3' );
-is( $atu->pcs2forte('[ 4,1,8 ]'), '3-11', 'PCS to Forte redux 4' );
+is( $atu->pcs2forte( [ 0,  7,  4 ] ),  '3-11', 'PCS to Forte redux 1' );
+is( $atu->pcs2forte( [ 4,  1,  8 ] ),  '3-11', 'PCS to Forte redux 2' );
+is( $atu->pcs2forte( [ 12, 19, 16 ] ), '3-11', 'PCS to Forte redux 3' );
 
 $deeply->( $atu->pcs2intervals( [qw/0 1 3/] ), [qw/1 2/], 'pcs2intervals' );
 
@@ -125,20 +129,26 @@ is_deeply(
   'prime form'
 );
 
+is_deeply(
+  $atu->prime_form( [ 21, 22, 23, 14, 15 ] ),
+  [ 0, 1, 2, 5, 6 ],
+  'prime form should normalize'
+);
+
 is_deeply( $atu->retrograde( [ 1, 2, 3 ] ), [ 3, 2, 1 ], 'retrograde' );
 
-is_deeply( $atu->rotate( [ 1, 2, 3 ], 0 ), [ 1, 2, 3 ], 'rotate by 0' );
+is_deeply( $atu->rotate( 0, [ 1, 2, 3 ] ), [ 1, 2, 3 ], 'rotate by 0' );
 
-is_deeply( $atu->rotate( [ 1, 2, 3 ], 1 ), [ 3, 1, 2 ], 'rotate by 1' );
+is_deeply( $atu->rotate( 1, [ 1, 2, 3 ] ), [ 3, 1, 2 ], 'rotate by 1' );
 
-is_deeply( $atu->rotate( [ 1, 2, 3 ], 2 ), [ 2, 3, 1 ], 'rotate by 2' );
+is_deeply( $atu->rotate( 2, [ 1, 2, 3 ] ), [ 2, 3, 1 ], 'rotate by 2' );
 
-is_deeply( $atu->rotate( [ 1, 2, 3 ], -1 ), [ 2, 3, 1 ], 'rotate by -1' );
+is_deeply( $atu->rotate( -1, [ 1, 2, 3 ] ), [ 2, 3, 1 ], 'rotate by -1' );
 
-is_deeply( $atu->rotateto( [qw/a b c d e c g/], 'c' ),
+is_deeply( $atu->rotateto( 'c', 1, [qw/a b c d e c g/] ),
   [qw/c d e c g a b/], 'rotate to' );
 
-is_deeply( $atu->rotateto( [qw/a b c d e c g/], 'c', -1 ),
+is_deeply( $atu->rotateto( 'c', -1, [qw/a b c d e c g/] ),
   [qw/c g a b c d e/], 'rotate to the other way' );
 
 # Verified against Musimathics, v.1, p.320.
@@ -161,35 +171,7 @@ is_deeply(
 );
 
 # XXX do not know what order permutations will be generated with, and
-# mostly just leaning on Algorithm::Permute, so skip 'subset' tests.
-#
-#is_deeply( $atu->subsets( [ 0, 1 ] ), [ [0], [1] ], 'subset test 1' );
-#
-#use Data::Dumper; diag Dumper $atu->subsets( [ 0, 1, 2 ] );
-#is_deeply(
-#  $atu->subsets( [ 0, 1, 2 ] ),
-#  [ [ 0, 1 ], [ 0, 2 ], [ 1, 2 ] ],
-#  'subset test 2'
-#);
-#
-#is_deeply(
-#  $atu->subsets( [ 0, 1, 2, 3 ] ),
-#  [ [ 0, 1, 2 ], [ 0, 1, 3 ], [ 0, 2, 3 ], [ 1, 2, 3 ], ],
-#  'subset test 3'
-#);
-#
-#use Data::Dumper; diag Dumper $atu->subsets( [ 0, 1, 2, 3 ], 2 );
-#is_deeply(
-#  $atu->subsets( [ 0, 1, 2, 3 ], 2 ),
-#  [ [ 0, 1 ], [ 0, 2 ], [ 0, 3 ], [ 1, 2 ], [ 1, 3 ], [ 2, 3 ], ],
-#  'subset test 4'
-#);
-
-is_deeply(
-  $atu->tcs( [ 0, 1, 2, 3 ] ),
-  [ 4, 3, 2, 1, 0, 0, 0, 0, 0, 1, 2, 3 ],
-  'transposition common-tone structure (TCS)'
-);
+# mostly just leaning on Algorithm::Permute, so skip 'subset' tests. :/
 
 is_deeply(
   $atu->tcis( [ 10, 9, 0, 11 ] ),
@@ -197,17 +179,23 @@ is_deeply(
   'transposition inversion common-tone structure (TICS)'
 );
 
-is_deeply( $atu->transpose( [ 11, 0, 1, 4, 5 ], 3 ),
+is_deeply(
+  $atu->tcs( [ 0, 1, 2, 3 ] ),
+  [ 4, 3, 2, 1, 0, 0, 0, 0, 0, 1, 2, 3 ],
+  'transposition common-tone structure (TCS)'
+);
+
+is_deeply( $atu->transpose( 3, [ 11, 0, 1, 4, 5 ] ),
   [ 2, 3, 4, 7, 8 ], 'transpose' );
 
 is_deeply(
-  $atu->transpose_invert( [ 10, 9, 0, 11 ], 1 ),
+  $atu->transpose_invert( 1, 0, [ 10, 9, 0, 11 ] ),
   [ 3, 4, 1, 2 ],
   'transpose_invert'
 );
 
 is_deeply(
-  $atu->transpose_invert( [ 0, 11, 3 ], 1, 6 ),
+  $atu->transpose_invert( 1, 6, [ 0, 11, 3 ] ),
   [ 7, 8, 4 ],
   'transpose_invert with axis'
 );
