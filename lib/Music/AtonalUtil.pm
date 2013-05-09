@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::MoreUtils qw/firstidx lastidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 my $DEG_IN_SCALE = 12;
 
@@ -658,7 +658,7 @@ sub normal_form {
     push @{ $origmap{ $p % $self->{_DEG_IN_SCALE} } }, $p;
   }
   if ( keys %origmap == 1 ) {
-    return [ keys %origmap ], \%origmap;
+    return wantarray ? ( [ keys %origmap ], \%origmap ) : [ keys %origmap ];
   }
   my @nset = sort { $a <=> $b } keys %origmap;
 
@@ -712,7 +712,7 @@ sub normal_form {
     @normal = @{ $equivs->[0] };
   }
 
-  return \@normal, \%origmap;
+  return wantarray ? ( \@normal, \%origmap ) : \@normal;
 }
 
 sub pcs2forte {
@@ -751,14 +751,16 @@ sub pitch2intervalclass {
     : $pitch;
 }
 
+# XXX tracking of original pitches would be nice, though complicated, as
+# ->invert would need to be modifed or a non-modulating version used
 sub prime_form {
   my $self = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
   croak 'pitch set must contain something' if !@$pset;
 
-  my @forms = ( $self->normal_form($pset) )[0];
-  push @forms, ( $self->normal_form( $self->invert( 0, $forms[0] ) ) )[0];
+  my @forms = scalar $self->normal_form($pset);
+  push @forms, scalar $self->normal_form( $self->invert( 0, $forms[0] ) );
 
   for my $set (@forms) {
     $set = $self->transpose( $self->{_DEG_IN_SCALE} - $set->[0], $set )
@@ -1235,10 +1237,10 @@ reference. Does not advance the index.
 
 =item B<normal_form> I<pitch_set>
 
-Returns two values; first, the normal form of the passed pitch set as an
-array reference, and secondly, a hash reference linking the normal form
-values to array references containing the input pitch numbers those
-normal form values represent. An example may clarify:
+Returns two values in list context; first, the normal form of the passed
+pitch set as an array reference, and secondly, a hash reference linking
+the normal form values to array references containing the input pitch
+numbers those normal form values represent. An example may clarify:
 
   my ($ps, $lookup) = $atu->normal_form(60, 64, 67, 72); # c' e' g' c''
 
@@ -1259,7 +1261,8 @@ the input are X" type questions.
 
 =back
 
-Use the following to select just the normal form array reference:
+Use C<scalar> context or the following to select just the normal form
+array reference:
 
   my $just_the_nf_thanks = ($atu->normal_form(...))[0];
 
