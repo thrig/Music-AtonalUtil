@@ -796,6 +796,22 @@ sub prime_form {
   return \@prime;
 }
 
+# Utility, convert a pitch set into a scale_degrees-bit number:
+#                7   3  0
+# [0,3,7] -> 000010001001
+sub ps2bits {
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
+  croak 'pitch set must contain something' if !@$pset;
+
+  my $bs = 0;
+  for my $p ( map $_ % $self->{_DEG_IN_SCALE}, @$pset ) {
+    $bs |= 1 << $p;
+  }
+  return $bs;
+}
+
 # Utility, "mirrors" a pitch to be within supplied min/max values as
 # appropriate for how many times the pitch "reflects" back within those
 # limits, which will depend on which limit is broken and by how much.
@@ -1273,6 +1289,9 @@ this module, though I lack enough information to verify if that code is
 correct. The Forte Numbers on Wikipedia match that of the www.mta.ca
 link method.
 
+See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
+take on normal and prime forms.
+
 =item B<pcs2forte> I<pitch_set>
 
 Given a pitch set, returns the Forte Number of that set. The Forte
@@ -1291,10 +1310,20 @@ Returns the interval class a given pitch belongs to (0 is 0, 11 maps
 down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
 system). Used internally by the B<interval_class_content> method.
 
+See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
+take on normal and prime forms.
+
 =item B<prime_form> I<pitch_set>
 
 Returns the prime form of a given pitch set (via B<normal_form> and
 various other operations on the passed pitch set) as an array reference.
+
+=item B<ps2bits> I<pitch_set>
+
+Converts a I<pitch_set> into a B<scale_degrees>-bit number:
+
+                 7   3  0
+  [0,3,7] -> 000010001001
 
 =item B<reflect_pitch> I<pitch>, I<min>, I<max>
 
@@ -1460,7 +1489,8 @@ L<http://en.wikipedia.org/wiki/Forte_number>
 
 =item *
 
-L<Music::Chord::Positions> for a more tonal module.
+L<Music::Chord::Positions> and L<Music::NeoRiemannianTonnetz> for other
+means of wrangling music.
 
 =item *
 
