@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 61;
+use Test::More tests => 63;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -134,6 +134,9 @@ is_deeply(
   [ 0, 1, 2, 5, 6 ],
   'prime form should normalize'
 );
+
+is( $atu->ps2bits( [ 0,  3,  7 ] ),  137,  'ps to bits' );
+is( $atu->ps2bits( [ 11, 14, 18 ] ), 2116, 'ps to bits' );
 
 is_deeply( $atu->retrograde( [ 1, 2, 3 ] ), [ 3, 2, 1 ], 'retrograde' );
 
