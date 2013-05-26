@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 63;
+use Test::More tests => 64;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -22,6 +22,8 @@ is( $atu->scale_degrees, 12, 'expect 12 degrees in scale by default' );
 ########################################################################
 #
 # Atonal Foo
+
+is_deeply($atu->bits2ps(137), [0,3,7], 'bits to pitch set');
 
 is_deeply(
   $atu->circular_permute( [ 0, 1, 2 ] ),

@@ -447,6 +447,19 @@ my $PCS2FORTE = {
 #
 # SUBROUTINES
 
+# Utility, convert a scale_degrees-bit number into a pitch set.
+#            7   3  0
+# 137 -> 000010001001 -> [0,3,7]
+sub bits2ps {
+  my ( $self, $bs ) = @_;
+
+  my @pset;
+  for my $p ( 0 .. $self->{_DEG_IN_SCALE} - 1 ) {
+    push @pset, $p if $bs & ( 1 << $p );
+  }
+  return \@pset;
+}
+
 sub circular_permute {
   my $self = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
@@ -798,7 +811,7 @@ sub prime_form {
 
 # Utility, convert a pitch set into a scale_degrees-bit number:
 #                7   3  0
-# [0,3,7] -> 000010001001
+# [0,3,7] -> 000010001001 -> 137
 sub ps2bits {
   my $self = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
@@ -1125,6 +1138,12 @@ basis for subsequent method calls. This value can be set or inspected
 via the B<scale_degrees> call. B<Note that while non-12-tone systems are
 in theory supported, they have not really been tested.>
 
+=item B<bits2ps> I<number>
+
+Converts a number into a I<pitch_set>, and returns said set as an array
+reference. Performs opposite role of the B<ps2bits> method. Will not
+consider bits beyond B<scale_degrees> in the input number.
+
 =item B<circular_permute> I<pitch_set>
 
 Takes a pitch set (array reference to list of pitches or just a
@@ -1320,10 +1339,21 @@ various other operations on the passed pitch set) as an array reference.
 
 =item B<ps2bits> I<pitch_set>
 
-Converts a I<pitch_set> into a B<scale_degrees>-bit number:
+Converts a I<pitch_set> into a B<scale_degrees>-bit number.
 
                  7   3  0
-  [0,3,7] -> 000010001001
+  [0,3,7] -> 000010001001 -> 137
+
+These can be inspected via C<printf>, and the usual bit operations
+applied as desired.
+
+  my $mask = $atu->ps2bits(0,3,7);
+  sprintf '%012b', $mask;           # 000010001001
+
+  if ( $mask == ( $atu->ps2bits($other_pset) & $mask ) ) {
+    # $other_pset has all the same bits on as $mask does
+    ...
+  }
 
 =item B<reflect_pitch> I<pitch>, I<min>, I<max>
 
