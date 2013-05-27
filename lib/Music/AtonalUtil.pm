@@ -450,7 +450,7 @@ my $PCS2FORTE = {
 # Utility, convert a scale_degrees-bit number into a pitch set.
 #            7   3  0
 # 137 -> 000010001001 -> [0,3,7]
-sub bits2ps {
+sub bits2pcs {
   my ( $self, $bs ) = @_;
 
   my @pset;
@@ -728,6 +728,22 @@ sub normal_form {
   return wantarray ? ( \@normal, \%origmap ) : \@normal;
 }
 
+# Utility, convert a pitch set into a scale_degrees-bit number:
+#                7   3  0
+# [0,3,7] -> 000010001001 -> 137
+sub pcs2bits {
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
+  croak 'pitch set must contain something' if !@$pset;
+
+  my $bs = 0;
+  for my $p ( map $_ % $self->{_DEG_IN_SCALE}, @$pset ) {
+    $bs |= 1 << $p;
+  }
+  return $bs;
+}
+
 sub pcs2forte {
   my $self = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
@@ -751,6 +767,21 @@ sub pcs2intervals {
   }
 
   return \@intervals;
+}
+
+sub pcs2str {
+  my $self = shift;
+  croak 'must supply a pitch set' if !defined $_[0];
+
+  my $str;
+  if ( ref $_[0] eq 'ARRAY' ) {
+    $str = '[' . join( ',', @{ $_[0] } ) . ']';
+  } elsif ( $_[0] =~ m/,/ ) {
+    $str = '[' . $_[0] . ']';
+  } else {
+    $str = '[' . join( ',', @_ ) . ']';
+  }
+  return $str;
 }
 
 sub pitch2intervalclass {
@@ -807,22 +838,6 @@ sub prime_form {
   }
 
   return \@prime;
-}
-
-# Utility, convert a pitch set into a scale_degrees-bit number:
-#                7   3  0
-# [0,3,7] -> 000010001001 -> 137
-sub ps2bits {
-  my $self = shift;
-  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
-
-  croak 'pitch set must contain something' if !@$pset;
-
-  my $bs = 0;
-  for my $p ( map $_ % $self->{_DEG_IN_SCALE}, @$pset ) {
-    $bs |= 1 << $p;
-  }
-  return $bs;
 }
 
 # Utility, "mirrors" a pitch to be within supplied min/max values as
@@ -1138,10 +1153,10 @@ basis for subsequent method calls. This value can be set or inspected
 via the B<scale_degrees> call. B<Note that while non-12-tone systems are
 in theory supported, they have not really been tested.>
 
-=item B<bits2ps> I<number>
+=item B<bits2pcs> I<number>
 
 Converts a number into a I<pitch_set>, and returns said set as an array
-reference. Performs opposite role of the B<ps2bits> method. Will not
+reference. Performs opposite role of the B<pcs2bits> method. Will not
 consider bits beyond B<scale_degrees> in the input number.
 
 =item B<circular_permute> I<pitch_set>
@@ -1311,6 +1326,24 @@ link method.
 See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
 take on normal and prime forms.
 
+=item B<pcs2bits> I<pitch_set>
+
+Converts a I<pitch_set> into a B<scale_degrees>-bit number.
+
+                 7   3  0
+  [0,3,7] -> 000010001001 -> 137
+
+These can be inspected via C<printf>, and the usual bit operations
+applied as desired.
+
+  my $mask = $atu->pcs2bits(0,3,7);
+  sprintf '%012b', $mask;           # 000010001001
+
+  if ( $mask == ( $atu->pcs2bits($other_pset) & $mask ) ) {
+    # $other_pset has all the same bits on as $mask does
+    ...
+  }
+
 =item B<pcs2forte> I<pitch_set>
 
 Given a pitch set, returns the Forte Number of that set. The Forte
@@ -1323,37 +1356,28 @@ Given a pitch set of at least two elements, returns the list of
 intervals between those pitch elements. This list is returned as an
 array reference.
 
+=item B<pcs2str> I<pitch_set>
+
+Given a pitch set (or string with commas in it) returns the pitch set as
+a string in C<[0,1,2]> form.
+
+  $atu->pcs2str([0,3,7])   # "[0,3,7]"
+  $atu->pcs2str(0,3,7)     # "[0,3,7]"
+  $atu->pcs2str("0,3,7")   # "[0,3,7]"
+
 =item B<pitch2intervalclass> I<pitch>
 
 Returns the interval class a given pitch belongs to (0 is 0, 11 maps
 down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
 system). Used internally by the B<interval_class_content> method.
 
-See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
-take on normal and prime forms.
-
 =item B<prime_form> I<pitch_set>
 
 Returns the prime form of a given pitch set (via B<normal_form> and
 various other operations on the passed pitch set) as an array reference.
 
-=item B<ps2bits> I<pitch_set>
-
-Converts a I<pitch_set> into a B<scale_degrees>-bit number.
-
-                 7   3  0
-  [0,3,7] -> 000010001001 -> 137
-
-These can be inspected via C<printf>, and the usual bit operations
-applied as desired.
-
-  my $mask = $atu->ps2bits(0,3,7);
-  sprintf '%012b', $mask;           # 000010001001
-
-  if ( $mask == ( $atu->ps2bits($other_pset) & $mask ) ) {
-    # $other_pset has all the same bits on as $mask does
-    ...
-  }
+See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
+take on normal and prime forms.
 
 =item B<reflect_pitch> I<pitch>, I<min>, I<max>
 

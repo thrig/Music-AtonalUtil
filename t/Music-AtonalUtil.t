@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 64;
+use Test::More tests => 67;
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -23,7 +23,7 @@ is( $atu->scale_degrees, 12, 'expect 12 degrees in scale by default' );
 #
 # Atonal Foo
 
-is_deeply($atu->bits2ps(137), [0,3,7], 'bits to pitch set');
+is_deeply( $atu->bits2pcs(137), [ 0, 3, 7 ], 'bits to pitch set' );
 
 is_deeply(
   $atu->circular_permute( [ 0, 1, 2 ] ),
@@ -120,6 +120,10 @@ is( $atu->pcs2forte( [ 12, 19, 16 ] ), '3-11', 'PCS to Forte redux 3' );
 
 $deeply->( $atu->pcs2intervals( [qw/0 1 3/] ), [qw/1 2/], 'pcs2intervals' );
 
+is( $atu->pcs2str( [ 0, 3, 7 ] ), "[0,3,7]", 'pcs2str 1' );
+is( $atu->pcs2str( 0, 3, 7 ), "[0,3,7]", 'pcs2str 2' );
+is( $atu->pcs2str("0,3,7"), "[0,3,7]", 'pcs2str 3' );
+
 is( $atu->pitch2intervalclass(0),  0, 'pitch2intervalclass 0' );
 is( $atu->pitch2intervalclass(1),  1, 'pitch2intervalclass 1' );
 is( $atu->pitch2intervalclass(11), 1, 'pitch2intervalclass 11' );
@@ -137,8 +141,8 @@ is_deeply(
   'prime form should normalize'
 );
 
-is( $atu->ps2bits( [ 0,  3,  7 ] ),  137,  'ps to bits' );
-is( $atu->ps2bits( [ 11, 14, 18 ] ), 2116, 'ps to bits' );
+is( $atu->pcs2bits( [ 0,  3,  7 ] ),  137,  'ps to bits' );
+is( $atu->pcs2bits( [ 11, 14, 18 ] ), 2116, 'ps to bits' );
 
 is_deeply( $atu->retrograde( [ 1, 2, 3 ] ), [ 3, 2, 1 ], 'retrograde' );
 
