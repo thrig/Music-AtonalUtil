@@ -10,11 +10,12 @@ my %params = (
   NAME         => 'Music::AtonalUtil',
   VERSION_FROM => 'lib/Music/AtonalUtil.pm',
   PREREQ_PM    => {
-    'Algorithm::Permute' => 0,
-    Carp                 => 0,
-    'List::MoreUtils'    => 0,
-    'Scalar::Util'       => 0,
-    'Test::More'         => 0,
+    'Algorithm::Combinatorics' => 0,
+    Carp                       => 0,
+    'List::Util'               => 0,
+    'List::MoreUtils'          => 0,
+    'Scalar::Util'             => 0,
+    'Test::More'               => 0,
   },
   ( $] >= 5.005
     ? (

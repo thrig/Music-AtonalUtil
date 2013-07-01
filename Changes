@@ -1,1 +1,4 @@
-See the git repository.
+See the git repository. Notable changes:
+
+ * gen_melody, check_melody created in 1.03, might see future
+   changes in API.

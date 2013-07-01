@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 67;
+use Test::More;    # plan is down at bottom
 
 eval 'use Test::Differences';    # display convenience
 my $deeply = $@ ? \&is_deeply : \&eq_or_diff;
@@ -23,30 +23,134 @@ is( $atu->scale_degrees, 12, 'expect 12 degrees in scale by default' );
 #
 # Atonal Foo
 
-is_deeply( $atu->bits2pcs(137), [ 0, 3, 7 ], 'bits to pitch set' );
+$deeply->( $atu->bits2pcs(137), [ 0, 3, 7 ], 'bits to pitch set' );
 
-is_deeply(
+$deeply->(
+  [ $atu->check_melody( [qw/0 2 4 6/], dup_interval_limit => 3 ) ],
+  [ 0, "dup_interval_limit" ],
+  'check_melody duplicate intervals'
+);
+
+$deeply->(
+  [ $atu->check_melody(
+      [qw/60 64 57 59 60 57 65 64 62 67 72/],
+      exclude_interval => [
+        { iset => [ 5, 5 ], },    # adjacent fourths ("cadential basses")
+      ],
+    )
+  ],
+  [ 0, "exclude_interval", { index => 8, selection => [ 5, 5 ] } ],
+  'check_melody exclude_interval'
+);
+
+$deeply->(
+  [ $atu->check_melody(
+      [qw/0 5 1 1 1 1 1 0 5/],
+      exclude_interval => [ { iset => [ 5, 5 ], in => 8 }, ],
+    )
+  ],
+  [ 0,
+    "exclude_interval",
+    { context => [ 5, 4, 0, 0, 0, 0, 1, 5 ],
+      index   => 0,
+      selection => [ 5, 5 ]
+    }
+  ],
+  'check_melody exclude_interval in wider range'
+);
+
+$deeply->(
+  [ $atu->check_melody(
+      [qw/0 3 2/], exclude_interval => [ { iset => [ 1, 3 ], sort => 1 }, ],
+    )
+  ],
+  [ 0, "exclude_interval", { index => 0, selection => [ 3, 1 ] } ],
+  'check_melody exclude_interval sorting'
+);
+
+$deeply->(
+  [ $atu->check_melody(
+      [qw/4 7 5 0/],
+      exclude_prime => [
+        { ps => [ 0, 3, 7 ], in => 4 },    # major or minor triad, any guise
+      ]
+    )
+  ],
+  [ 0,
+    "exclude_prime",
+    { context => [ 4, 7, 5, 0 ], index => 0, selection => [ 4, 7, 0 ] }
+  ],
+  'check_melody triad in four notes'
+);
+
+$deeply->(
+  [ $atu->check_melody(
+      [qw/0 2 4 5 7/],    # c major scale run
+      exclude_prime => [
+        # 7-35 (major/minor scale) but also excluding from all 5-x or
+        # 6-x subsets of said set
+        { ps => [ 0, 1, 3, 5, 6, 8, 10 ], subsets => [ 6, 5 ] },
+      ]
+    )
+  ],
+  [ 0, "exclude_prime", { index => 0, selection => [ 0, 2, 4, 5, 7 ] } ],
+  'check_melody c major scale run via subsets'
+);
+
+$deeply->(
+  [ $atu->check_melody(
+      [qw/0 1 5 7 11 12/],
+      exclude_half_prime => [
+        { ps => [ 0, 4, 5 ], in => 3 },    # leading tone/tonic/dominant
+      ]
+    )
+  ],
+  [ 0, "exclude_half_prime", { index => 3, selection => [ 7, 11, 12 ] } ],
+  'check_melody harmonic cadence'
+);
+
+# this is [0,1,5] or [0,4,5], with latter being the lt/T/D cadence, so
+# only want to exclude the later(? - other involves a 4th so might be
+# some other cadential form, but nothing obvious to my ear) -- import
+# "half prime" code from M::NRT? (and also confirm that my normal_form
+# does the right thing, or whether it too needs to do what the M::NRT
+# code does)
+#     { ps => [ 0, 1, 5 ], },       # leading tone/tonic/dominant (cadence)
+
+$deeply->(
   $atu->circular_permute( [ 0, 1, 2 ] ),
   [ [ 0, 1, 2 ], [ 1, 2, 0 ], [ 2, 0, 1 ] ],
   'circular permutation'
 );
 
-is_deeply(
+$deeply->(
   $atu->complement( [ 0, 1, 2, 3, 4, 5 ] ),
   [ 6, 7, 8, 9, 10, 11 ],
   'pitch set complement'
 );
 
-is_deeply( [ 0, 1, 2, 5, 6, 9 ], $atu->forte2pcs('6-Z44'), 'Forte to PCS1' );
-is_deeply( [ 0, 1, 2, 5, 6, 9 ], $atu->forte2pcs('6-z44'), 'Forte to PCS2' );
+$deeply->( $atu->forte2pcs('6-Z44'), [ 0, 1, 2, 5, 6, 9 ], 'Forte to PCS1' );
+$deeply->( $atu->forte2pcs('6-z44'), [ 0, 1, 2, 5, 6, 9 ], 'Forte to PCS2' );
 
-is_deeply(
+# normal_form would render these as [9 x 4]; prime_form both as [0,3,7]
+$deeply->(
+  scalar $atu->half_prime_form(qw/9 0 4/),
+  [ 0, 3, 7 ],
+  'half_prime_form minor'
+);
+$deeply->(
+  scalar $atu->half_prime_form(qw/9 1 4/),
+  [ 0, 4, 7 ],
+  'half_prime_form major'
+);
+
+$deeply->(
   scalar $atu->interval_class_content( [ 0, 2, 4 ] ),
   [ 0, 2, 0, 1, 0, 0 ],
   'icc icv'
 );
 
-is_deeply(
+$deeply->(
   scalar $atu->interval_class_content(
     [qw/9 0 2 4 6 4 2 11 7 9 11 0 9 8 9 11 8 4/]
   ),
@@ -64,39 +168,39 @@ $deeply->(
   [qw/2 9 5 2/], 'intervals2pcs custom start'
 );
 
-is_deeply(
+$deeply->(
   $atu->invariance_matrix( [ 3, 5, 6, 9 ] ),
   [ [ 6, 8, 9, 0 ], [ 8, 10, 11, 2 ], [ 9, 11, 0, 3 ], [ 0, 2, 3, 6 ] ],
   'invariance matrix'
 );
 
-is_deeply( $atu->invert( 0, [ 0, 4, 7 ] ), [ 0, 8, 5 ], 'invert something' );
+$deeply->( $atu->invert( 0, [ 0, 4, 7 ] ), [ 0, 8, 5 ], 'invert something' );
 
-is_deeply(
+$deeply->(
   $atu->multiply( 5, [ 10, 9, 0, 11 ] ),
   [ 2, 9, 0, 7 ],
   'multiply something'
 );
 
-is_deeply(
+$deeply->(
   ( $atu->normal_form( [ 6, 6, 7, 2, 2, 1, 3, 3, 3 ] ) )[0],
   [ 1, 2, 3, 6, 7 ],
   'normal form'
 );
 
-is_deeply(
+$deeply->(
   ( $atu->normal_form( [ 1, 4, 7, 8, 10 ] ) )[0],
   [ 7, 8, 10, 1, 4 ],
   'normal form compactness'
 );
 
-is_deeply(
+$deeply->(
   ( $atu->normal_form( [ 8, 10, 2, 4 ] ) )[0],
   [ 2, 4, 8, 10 ],
-  'normal form lowest number fallthrough'
+  'normal form lowest number fall through'
 );
 
-is_deeply(
+$deeply->(
   ( $atu->normal_form(
       [ map { my $s = $_ + 24; $s } 6, 6, 7, 2, 2, 1, 3, 3, 3 ]
     )
@@ -105,7 +209,7 @@ is_deeply(
   'normal form non-base-register pitches'
 );
 
-is_deeply(
+$deeply->(
   [ $atu->normal_form( 0, 4, 7, 12 ) ],
   [ [ 0, 4, 7 ], { 0 => [ 0, 12 ], 4 => [4], 7 => [7] } ],
   'normal form <c e g c>'
@@ -129,13 +233,13 @@ is( $atu->pitch2intervalclass(1),  1, 'pitch2intervalclass 1' );
 is( $atu->pitch2intervalclass(11), 1, 'pitch2intervalclass 11' );
 is( $atu->pitch2intervalclass(6),  6, 'pitch2intervalclass 6' );
 
-is_deeply(
+$deeply->(
   $atu->prime_form( [ 9, 10, 11, 2, 3 ] ),
   [ 0, 1, 2, 5, 6 ],
   'prime form'
 );
 
-is_deeply(
+$deeply->(
   $atu->prime_form( [ 21, 22, 23, 14, 15 ] ),
   [ 0, 1, 2, 5, 6 ],
   'prime form should normalize'
@@ -144,24 +248,28 @@ is_deeply(
 is( $atu->pcs2bits( [ 0,  3,  7 ] ),  137,  'ps to bits' );
 is( $atu->pcs2bits( [ 11, 14, 18 ] ), 2116, 'ps to bits' );
 
-is_deeply( $atu->retrograde( [ 1, 2, 3 ] ), [ 3, 2, 1 ], 'retrograde' );
+$deeply->( $atu->retrograde( [ 1, 2, 3 ] ), [ 3, 2, 1 ], 'retrograde' );
 
-is_deeply( $atu->rotate( 0, [ 1, 2, 3 ] ), [ 1, 2, 3 ], 'rotate by 0' );
+$deeply->( $atu->rotate( 0, [ 1, 2, 3 ] ), [ 1, 2, 3 ], 'rotate by 0' );
 
-is_deeply( $atu->rotate( 1, [ 1, 2, 3 ] ), [ 3, 1, 2 ], 'rotate by 1' );
+$deeply->( $atu->rotate( 1, [ 1, 2, 3 ] ), [ 3, 1, 2 ], 'rotate by 1' );
 
-is_deeply( $atu->rotate( 2, [ 1, 2, 3 ] ), [ 2, 3, 1 ], 'rotate by 2' );
+$deeply->( $atu->rotate( 2, [ 1, 2, 3 ] ), [ 2, 3, 1 ], 'rotate by 2' );
 
-is_deeply( $atu->rotate( -1, [ 1, 2, 3 ] ), [ 2, 3, 1 ], 'rotate by -1' );
+$deeply->( $atu->rotate( -1, [ 1, 2, 3 ] ), [ 2, 3, 1 ], 'rotate by -1' );
 
-is_deeply( $atu->rotateto( 'c', 1, [qw/a b c d e c g/] ),
-  [qw/c d e c g a b/], 'rotate to' );
+$deeply->(
+  $atu->rotateto( 'c', 1, [qw/a b c d e c g/] ),
+  [qw/c d e c g a b/], 'rotate to'
+);
 
-is_deeply( $atu->rotateto( 'c', -1, [qw/a b c d e c g/] ),
-  [qw/c g a b c d e/], 'rotate to the other way' );
+$deeply->(
+  $atu->rotateto( 'c', -1, [qw/a b c d e c g/] ),
+  [qw/c g a b c d e/], 'rotate to the other way'
+);
 
 # Verified against Musimathics, v.1, p.320.
-is_deeply(
+$deeply->(
   $atu->set_complex( [ 0, 8, 10, 6, 7, 5, 9, 1, 3, 2, 11, 4 ] ),
   [ [ 0,  8,  10, 6,  7,  5,  9,  1,  3,  2,  11, 4 ],
     [ 4,  0,  2,  10, 11, 9,  1,  5,  7,  6,  3,  8 ],
@@ -176,40 +284,46 @@ is_deeply(
     [ 1,  9,  11, 7,  8,  6,  10, 2,  4,  3,  0,  5 ],
     [ 8,  4,  6,  2,  3,  1,  5,  9,  11, 10, 7,  0 ]
   ],
-  'genereate set complex'
+  'generate set complex'
 );
 
-# XXX do not know what order permutations will be generated with, and
-# mostly just leaning on Algorithm::Permute, so skip 'subset' tests. :/
+# NOTE normalized with prime_form as do not know whether the output from
+# Algorithm::Combinatorics will remain stable
+$deeply->(
+  [ map $atu->prime_form($_), @{ $atu->subsets( 2, [ 0, 4, 8 ] ) } ],
+  [ [ 0, 4 ], [ 0, 4 ], [ 0, 4 ] ], 'subsets1'
+);
 
-is_deeply(
+$deeply->(
   $atu->tcis( [ 10, 9, 0, 11 ] ),
   [ 1, 0, 0, 0, 0, 0, 1, 2, 3, 4, 3, 2 ],
   'transposition inversion common-tone structure (TICS)'
 );
 
-is_deeply(
+$deeply->(
   $atu->tcs( [ 0, 1, 2, 3 ] ),
   [ 4, 3, 2, 1, 0, 0, 0, 0, 0, 1, 2, 3 ],
   'transposition common-tone structure (TCS)'
 );
 
-is_deeply( $atu->transpose( 3, [ 11, 0, 1, 4, 5 ] ),
-  [ 2, 3, 4, 7, 8 ], 'transpose' );
+$deeply->(
+  $atu->transpose( 3, [ 11, 0, 1, 4, 5 ] ),
+  [ 2, 3, 4, 7, 8 ], 'transpose'
+);
 
-is_deeply(
+$deeply->(
   $atu->transpose_invert( 1, 0, [ 10, 9, 0, 11 ] ),
   [ 3, 4, 1, 2 ],
   'transpose_invert'
 );
 
-is_deeply(
+$deeply->(
   $atu->transpose_invert( 1, 6, [ 0, 11, 3 ] ),
   [ 7, 8, 4 ],
   'transpose_invert with axis'
 );
 
-is_deeply(
+$deeply->(
   scalar $atu->variances( [ 3, 5, 6, 9 ], [ 6, 8, 9, 0 ] ),
   [ 6, 9 ],
   'variances - scalar intersection'
@@ -229,11 +343,11 @@ ok( $atu->nexti( \@notes ) eq 'b', 'nexti' );
 $atu->seti( \@notes, 4 );
 ok( $atu->nexti( \@notes ) eq 'a', 'nexti' );
 
-is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/b c/], 'lastn default' );
-is_deeply( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/],
+$deeply->( [ $atu->lastn( [qw/a b c/] ) ], [qw/b c/], 'lastn default' );
+$deeply->( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/],
   'lastn overflow' );
 $atu = Music::AtonalUtil->new( lastn => 3 );
-is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
+$deeply->( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
 
 {
   my @pitches  = -10 .. 10;
@@ -242,7 +356,7 @@ is_deeply( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
   for my $p (@pitches) {
     push @results, $atu->reflect_pitch( $p, 2, 5 );
   }
-  is_deeply( \@results, \@expected, 'reflect_pitch' );
+  $deeply->( \@results, \@expected, 'reflect_pitch' );
 }
 
 ########################################################################
@@ -261,3 +375,9 @@ my $stu = Music::AtonalUtil->new( DEG_IN_SCALE => 17 );
 isa_ok( $stu, 'Music::AtonalUtil' );
 
 is( $stu->scale_degrees, 17, 'custom number of scale degrees' );
+
+# waste of CPU, (low) risk of blow-uppage
+#my $melody = Music::AtonalUtil->new->gen_melody;
+#diag("melody for this test is: @$melody");
+
+plan tests => 77;

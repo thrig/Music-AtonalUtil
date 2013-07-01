@@ -11,12 +11,14 @@ use 5.010;
 use strict;
 use warnings;
 
-use Algorithm::Permute ();
+# as Math::Combinatorics does not preserve input order in return values
+use Algorithm::Combinatorics qw/combinations/;
 use Carp qw/croak/;
+use List::Util qw/shuffle/;
 use List::MoreUtils qw/firstidx lastidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 my $DEG_IN_SCALE = 12;
 
@@ -447,7 +449,56 @@ my $PCS2FORTE = {
 #
 # SUBROUTINES
 
-# Utility, convert a scale_degrees-bit number into a pitch set.
+# Utility method for check_melody - takes melody, a list of pitches,
+# optionally how many notes (beyond that of pitches to audit) to check,
+# and a code reference that will accept a selection of the melody and
+# return something that will be tested against the list of pitches
+# (second argument) for equality: true if match, false if not (and then
+# a bunch of references containing what failed).
+sub _apply_melody_rule {
+  my ( $self, $melody, $check_set, $note_count, $code, $flag_sort ) = @_;
+  $flag_sort //= 0;
+
+  # make equal to the set if less than the set. no high value test as
+  # loop will abort if note_count exceeds the length of melody, below.
+  $note_count //= 0;
+  $note_count = @$check_set if $note_count < @$check_set;
+
+  # rule is too large for the melody, skip
+  return 1, {} if @$check_set > @$melody;
+
+  for my $i ( 0 .. @$melody - @$check_set ) {
+    my @selection = @{$melody}[ $i .. $i + @$check_set - 1 ];
+
+    my $sel_audit = $code->( $self, \@selection );
+    @$sel_audit = sort { $a <=> $b } @$sel_audit if $flag_sort;
+    if ( "@$sel_audit" eq "@$check_set" ) {
+      return 0, { index => $i, selection => \@selection };
+    }
+
+    if ( $note_count > @$check_set ) {
+      for my $count ( @$check_set + 1 .. $note_count ) {
+        last if $i + $count - 1 > $#$melody;
+
+        @selection = @{$melody}[ $i .. $i + $count - 1 ];
+        my $iter = combinations( \@selection, scalar @$check_set );
+
+        while ( my $subsel = $iter->next ) {
+          $sel_audit = $code->( $self, $subsel );
+          @$sel_audit = sort { $a <=> $b } @$sel_audit if $flag_sort;
+          if ( "@$sel_audit" eq "@$check_set" ) {
+            return 0,
+              { context => \@selection, index => $i, selection => $subsel };
+          }
+        }
+      }
+    }
+  }
+
+  return 1, {};
+}
+
+# Utility, converts a scale_degrees-bit number into a pitch set.
 #            7   3  0
 # 137 -> 000010001001 -> [0,3,7]
 sub bits2pcs {
@@ -458,6 +509,110 @@ sub bits2pcs {
     push @pset, $p if $bs & ( 1 << $p );
   }
   return \@pset;
+}
+
+# Audits a sequence of pitches for suitability, per various checks
+# passed in via the params hash (based on Smith-Brindle Reginald's
+# "Serial Composition" discussion of atonal melody construction).
+sub check_melody {
+  my ( $self, $melody, %params ) = @_;
+
+  my $rules_applied = 0;
+
+  my ( %intervals, @intervals );
+  for my $i ( 1 .. $#$melody ) {
+    my $ival = abs $melody->[$i] - $melody->[ $i - 1 ];
+    $intervals{$ival}++;
+    push @intervals, $ival;
+  }
+
+  if ( exists $params{dup_interval_limit} ) {
+    for my $icount ( values %intervals ) {
+      if ( $icount >= $params{dup_interval_limit} ) {
+        return wantarray ? ( 0, "dup_interval_limit" ) : 0;
+      }
+    }
+    $rules_applied++;
+  }
+
+  for my $ruleset ( @{ $params{exclude_interval} || [] } ) {
+    croak "no interval set in exclude_interval rule"
+      if not exists $ruleset->{iset}
+      or ref $ruleset->{iset} ne 'ARRAY';
+    next if @{ $ruleset->{iset} } > @intervals;
+
+    # check (magnitude of the) intervals of the melody. code ref just
+    # returns the literal intervals to compare against what is in the
+    # iset. (other options might be to ICC the intervals, or fold them
+    # into a single register, etc. but that would take more coding.)
+    my ( $ret, $results ) = $self->_apply_melody_rule(
+      \@intervals, $ruleset->{iset}, $ruleset->{in},
+      sub { [ @{ $_[1] } ] },
+      $ruleset->{sort} ? 1 : 0
+    );
+    if ( $ret != 1 ) {
+      return wantarray ? ( 0, "exclude_interval", $results ) : 0;
+    }
+    $rules_applied++;
+  }
+
+  for my $ps_ref ( [qw/exclude_prime prime_form/],
+    [qw/exclude_half_prime half_prime_form/] ) {
+    my $ps_rule   = $ps_ref->[0];
+    my $ps_method = $ps_ref->[1];
+
+    for my $ruleset ( @{ $params{$ps_rule} || [] } ) {
+      croak "no pitch set in $ps_rule rule"
+        if not exists $ruleset->{ps}
+        or ref $ruleset->{ps} ne 'ARRAY';
+
+      # for intervals code, not necessary for pitch set operations, all of
+      # which sort the pitches as part of the calculations involved
+      delete $ruleset->{sort};
+
+      # excludes from *any* subset for the given subset magnitudes of the
+      # parent pitch set
+      for my $ss_mag ( @{ $ruleset->{subsets} || [] } ) {
+        croak "subset must be of lesser magnitude than pitch set"
+          if $ss_mag >= @{ $ruleset->{ps} };
+        my $in_ss = $ruleset->{in} // 0;
+        $in_ss = @{ $ruleset->{ps} }
+          if $in_ss < @{ $ruleset->{ps} };
+        # except scale down to fit smaller subset pitch set
+        $in_ss -= @{ $ruleset->{ps} } - $ss_mag;
+
+        next if $in_ss > @$melody;
+
+        my $all_subpsets = $self->subsets( $ss_mag, $ruleset->{ps} );
+        my %seen_s_pset;
+        for my $s_pset (@$all_subpsets) {
+          my $s_prime = $self->$ps_method($s_pset);
+          next if $seen_s_pset{"@$s_prime"}++;
+          my ( $ret, $results ) =
+            $self->_apply_melody_rule( $melody, $s_prime,
+            $in_ss, sub { $_[0]->$ps_method( $_[1] ) } );
+          if ( $ret != 1 ) {
+            return wantarray ? ( 0, $ps_rule, $results ) : 0;
+          }
+        }
+        $rules_applied++;
+      }
+
+      my ( $ret, $results ) =
+        $self->_apply_melody_rule( $melody, $ruleset->{ps}, $ruleset->{in},
+        sub { $_[0]->$ps_method( $_[1] ) } );
+      if ( $ret != 1 ) {
+        return wantarray ? ( 0, $ps_rule, $results ) : 0;
+      }
+
+      $rules_applied++;
+    }
+  }
+
+  if ( $rules_applied == 0 ) {
+    return wantarray ? ( 0, "no rules applied" ) : 0;
+  }
+  return wantarray ? ( 1, "ok" ) : 1;
 }
 
 sub circular_permute {
@@ -488,6 +643,160 @@ sub fnums { $FORTE2PCS }
 sub forte2pcs {
   my ( $self, $forte_number ) = @_;
   return $FORTE2PCS->{ lc $forte_number };
+}
+
+# simple wrapper around check_melody to create something to work with,
+# depending on the params.
+sub gen_melody {
+  my ( $self, %params ) = @_;
+
+  my $attempts = 1000;    # enough for Helen, enough for us
+  my $max_interval = $params{melody_max_interval} || 16; # tessitura of a 10th
+  delete $params{melody_max_interval};
+
+  if ( !keys %params ) {
+    # based on Reginald's ideas (insofar as those can be represented by
+    # the rules system I've cobbled together)
+    %params = (
+      exclude_half_prime => [
+        { ps => [ 0, 4, 5 ] },    # leading tone/tonic/dominant
+      ],
+      exclude_interval => [
+        { iset => [ 5, 5 ], },    # adjacent fourths ("cadential basses")
+      ],
+      exclude_prime => [
+        { ps => [ 0, 3, 7 ], in => 4 },    # major or minor triad, any guise
+        { ps => [ 0, 2, 5, 8 ], },         # 7th, any guise, exact
+        { ps => [ 0, 2, 4, 6 ], in => 5 }, # whole tone formation
+                # 7-35 (major/minor scale) but also excluding from all 5-x or
+                # 6-x subsets of said set
+        { ps => [ 0, 1, 3, 5, 6, 8, 10 ], subsets => [ 6, 5 ] },
+      ],
+    );
+  }
+
+  my $got_melody = 0;
+  my @melody;
+  eval {
+    ATTEMPT: while ( $attempts-- > 0 ) {
+      my %seen;
+      my @pitches = 0 .. $self->{_DEG_IN_SCALE} - 1;
+      @melody = splice @pitches, rand @pitches, 1;
+      $seen{ $melody[0] } = 1;
+      my $melody_low  = $melody[0];
+      my $melody_high = $melody[0];
+
+      while (@pitches) {
+        my @potential = grep {
+          my $base_pitch = $_ % 12;
+          my $ret        = 0;
+          for my $p (@pitches) {
+            if ( $base_pitch == $p ) { $ret = 1; last }
+          }
+          $ret
+        } $melody_high - $max_interval .. $melody_low + $max_interval;
+        my $choice      = $potential[ rand @potential ];
+        my $base_choice = $choice % 12;
+        @pitches = grep $_ != $base_choice, @pitches;
+        push @melody, $choice;
+
+        $melody_low  = $choice if $choice < $melody_low;
+        $melody_high = $choice if $choice > $melody_high;
+      }
+
+      # but negative pitches are awkward for various reasons
+      if ( $melody_low < 0 ) {
+        $melody_low = abs $melody_low;
+        $_ += $melody_low for @melody;
+      }
+
+      ( $got_melody, my $msg ) = $self->check_melody( \@melody, %params );
+      next ATTEMPT if $got_melody != 1;
+
+      last;
+    }
+  };
+  croak $@ if $@;
+  croak "could not generate a melody" unless $got_melody;
+
+  return \@melody;
+}
+
+# my own creation (?), provides results somewhere between normal_form
+# and prime_form, that is, the ability to distinguish pitch sets that
+# are [0,3,7] from pitch sets that are [0,4,7] which neither normal_form
+# nor prime_form provide.
+#
+# see also Music::NeoRiemannianTonnetz 'normalize' which this was copied
+# from with return value tweaks.
+sub half_prime_form {
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
+  croak 'pitch set must contain something' if !@$pset;
+
+  my %origmap;
+  for my $p (@$pset) {
+    push @{ $origmap{ $p % $self->{_DEG_IN_SCALE} } }, $p;
+  }
+  if ( keys %origmap == 1 ) {
+    return wantarray ? ( keys %origmap, \%origmap ) : keys %origmap;
+  }
+  my @nset = sort { $a <=> $b } keys %origmap;
+
+  my @equivs;
+  for my $i ( 0 .. $#nset ) {
+    for my $j ( 0 .. $#nset ) {
+      $equivs[$i][$j] = $nset[ ( $i + $j ) % @nset ];
+    }
+  }
+  my @order = reverse 1 .. $#nset;
+
+  my @normal;
+  for my $i (@order) {
+    my $min_span = $self->{_DEG_IN_SCALE};
+    my @min_span_idx;
+
+    for my $eidx ( 0 .. $#equivs ) {
+      my $span =
+        ( $equivs[$eidx][$i] - $equivs[$eidx][0] ) % $self->{_DEG_IN_SCALE};
+      if ( $span < $min_span ) {
+        $min_span     = $span;
+        @min_span_idx = $eidx;
+      } elsif ( $span == $min_span ) {
+        push @min_span_idx, $eidx;
+      }
+    }
+
+    if ( @min_span_idx == 1 ) {
+      @normal = @{ $equivs[ $min_span_idx[0] ] };
+      last;
+    } else {
+      @equivs = @equivs[@min_span_idx];
+    }
+  }
+
+  if ( !@normal ) {
+    # nothing unique, pick lowest starting pitch, which is first index
+    # by virtue of the numeric sort performed above.
+    @normal = @{ $equivs[0] };
+  }
+
+  # but must map <b dis fis> (and anything else not <c e g>) so b is 0,
+  # dis 4, etc. and also update the original pitch mapping - this is
+  # the major addition to the otherwise stock normal_form code.
+  if ( $normal[0] != 0 ) {
+    my $trans = $self->{_DEG_IN_SCALE} - $normal[0];
+    my %newmap;
+    for my $i (@normal) {
+      my $prev = $i;
+      $i = ( $i + $trans ) % $self->{_DEG_IN_SCALE};
+      $newmap{$i} = $origmap{$prev};
+    }
+    %origmap = %newmap;
+  }
+
+  return wantarray ? ( \@normal, \%origmap ) : \@normal;
 }
 
 sub interval_class_content {
@@ -625,7 +934,8 @@ sub multiply {
   # set the iterator for a ref
   sub seti {
     my ( $self, $ref, $i ) = @_;
-    croak 'iterator must be number' unless looks_like_number($i);
+    croak 'iterator must be number'
+      unless looks_like_number($i);
     $seen{$ref} = $i;
   }
 
@@ -647,7 +957,8 @@ sub new {
   }
 
   if ( exists $param{lastn} ) {
-    croak 'lastn must be number' unless looks_like_number $param{lastn};
+    croak 'lastn must be number'
+      unless looks_like_number $param{lastn};
     $self->{_lastn} = $param{lastn};
   } else {
     $self->{_lastn} = 2;
@@ -725,10 +1036,12 @@ sub normal_form {
     @normal = @{ $equivs->[0] };
   }
 
+  $_ += 0 for @normal;    # KLUGE avoid Test::Differences seeing '4' vs. 4
+
   return wantarray ? ( \@normal, \%origmap ) : \@normal;
 }
 
-# Utility, convert a pitch set into a scale_degrees-bit number:
+# Utility, converts a pitch set into a scale_degrees-bit number:
 #                7   3  0
 # [0,3,7] -> 000010001001 -> 137
 sub pcs2bits {
@@ -796,7 +1109,7 @@ sub pitch2intervalclass {
 }
 
 # XXX tracking of original pitches would be nice, though complicated, as
-# ->invert would need to be modifed or a non-modulating version used
+# ->invert would need to be modified or a non-modulating version used
 sub prime_form {
   my $self = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
@@ -817,7 +1130,8 @@ sub prime_form {
   } else {
     # look for most compact to the left
     my @sums = ( 0, 0 );
-  PITCH: for my $i ( 0 .. $#$pset ) {
+  PITCH:
+    for my $i ( 0 .. $#$pset ) {
       for my $j ( 0 .. 1 ) {
         $sums[$j] += $forms[$j][$i];
       }
@@ -829,12 +1143,6 @@ sub prime_form {
         last PITCH;
       }
     }
-  }
-
-  if ( !@prime ) {
-    use Data::Dumper;
-    warn Dumper \@forms;
-    die "XXX oh noes";
   }
 
   return \@prime;
@@ -968,6 +1276,7 @@ sub subsets {
 
   my @nset = uniq map { my $p = $_ % $self->{_DEG_IN_SCALE}; $p } @$pset;
   croak 'pitch set must contain two or more unique pitches' if @nset < 2;
+
   if ( defined $len ) {
     croak 'length must be less than size of pitch set (but not zero)'
       if $len >= @nset
@@ -980,13 +1289,7 @@ sub subsets {
     $len = @nset - 1;
   }
 
-  my $p = Algorithm::Permute->new( \@nset, $len );
-
-  my ( @subsets, %seen );
-  while ( my @res = sort { $a <=> $b } $p->next ) {
-    push @subsets, \@res unless $seen{ join '', @res }++;
-  }
-  return \@subsets;
+  return [ combinations( \@nset, $len ) ];
 }
 
 sub tcis {
@@ -1002,7 +1305,8 @@ sub tcis {
   for my $i ( 0 .. $self->{_DEG_IN_SCALE} - 1 ) {
     $tcis[$i] = 0;
     for my $p ( @{ $self->transpose_invert( $i, 0, $pset ) } ) {
-      $tcis[$i]++ if exists $seen{$p};
+      $tcis[$i]++
+        if exists $seen{$p};
     }
   }
   return \@tcis;
@@ -1021,7 +1325,8 @@ sub tcs {
   for my $i ( 1 .. $self->{_DEG_IN_SCALE} - 1 ) {
     $tcs[$i] = 0;
     for my $p ( @{ $self->transpose( $i, $pset ) } ) {
-      $tcs[$i]++ if exists $seen{$p};
+      $tcs[$i]++
+        if exists $seen{$p};
     }
   }
   return \@tcs;
@@ -1120,12 +1425,14 @@ This module contains a variety of routines suitable for atonal music
 composition and analysis (plus a bunch of other routines I could find
 no better home for). See the methods below, the test suite, and the
 C<atonal-util> command line interface (in L<App::MusicTools>) for ideas
-on how to use these routines. L</"SEE ALSO"> has links to documentation
-on atonal analysis.
+on how to use these routines.
 
-Warning! There may be errors due to misunderstanding of atonal theory by
-the autodidactic author. If in doubt, compare the results of this code
-with other software or documentation available.
+There may be errors due to misunderstanding of atonal theory by the
+autodidactic author. If in doubt, compare the results of this code with
+other software or documentation available. However, the L</"SEE ALSO">
+references have been consulted to varying degrees though the development
+of this module, and there are unit tests for a few things, so hopefully
+there are not too many bugs.
 
 =head1 METHODS
 
@@ -1136,30 +1443,98 @@ or just a list of such numbers), and most return array references
 containing the results. Some (but not much) sanity checking is done on
 the input, which may cause the code to B<croak> if something is awry.
 
-Results from the various methods should reside within the
-B<scale_degrees>, unless the method returns something else. Integer math
-is (often) assumed.
+First create an object (via B<new>) then call any other of the remaining
+methods below via that object. Results from the various methods should
+reside within the B<scale_degrees>, unless the method returns something
+else. Integer math is (often) assumed.
 
-=over 4
-
-=item B<new> I<parameter_pairs ...>
-
-Constructor. The degrees in the scale can be adjusted via:
-
-  Music::AtonalUtil->new(DEG_IN_SCALE => 17);
-
-or some other positive integer greater than one, to use a non-12-tone
-basis for subsequent method calls. This value can be set or inspected
-via the B<scale_degrees> call. B<Note that while non-12-tone systems are
-in theory supported, they have not really been tested.>
-
-=item B<bits2pcs> I<number>
+=head2 B<bits2pcs> I<number>
 
 Converts a number into a I<pitch_set>, and returns said set as an array
 reference. Performs opposite role of the B<pcs2bits> method. Will not
 consider bits beyond B<scale_degrees> in the input number.
 
-=item B<circular_permute> I<pitch_set>
+=head2 B<check_melody> I<pitch_set>, I<params> ...
+
+Given a melody (array reference of pitch numbers), and a set of
+parameters, returns false if the melody fails any of the rules present
+in the parameters, or true otherwise. See B<gen_melody> for one method
+of melody generation. The return value in scalar context will be a
+boolean; in list context, the boolean will be followed by a rule name
+and then depending on the rule possible a third return value, an hash
+reference containing details of what failed where.
+
+Parameters (at least one must be specified, doubtless more):
+
+=over 4
+
+=item I<dup_interval_limit> => I<count>
+
+Rejects the melody if there are a number of intervals equal to or
+greater than the specified I<count>.
+
+=item I<exclude_interval> => [ I<list of hashes> ... ]
+
+Rejects the melody should it contain specified patterns of intervals.
+Only the magnitude of the interval is considered, and not the direction.
+An example, whose ending in rising fourths would be unacceptable in a
+strict atonal context:
+
+  $atu->check_melody(
+    [qw/60 64 57 59 60 57 65 64 62 67 72/],
+    exclude_interval => [
+      { iset => [ 5, 5 ], }, # adjacent fourths ("cadential basses")
+    ],
+  );
+
+In addition to the I<iset> interval array reference, an I<in> value can
+specify in how many intervals (above that of the I<iset>) to search for
+the specified intervals. The following would look for two perfect
+fourths, optionally with some other interval between them:
+
+      { iset => [ 5, 5 ], in => 3 },
+
+Intervals in any order may be considered by adding the I<sort> flag, and
+then numbering the intervals to match from low to high:
+
+      { iset => [ 1, 2, 3 ], sort => 1 },
+
+=item I<exclude_half_prime> => [ I<list of hashes> ... ]
+
+Rejects the melody should it contain notes comprising the specified so-
+called "half prime" form. The I<ps> value pitch set must be in
+B<half_prime_form>. Otherwise identical to I<exclude_prime>.
+
+=item I<exclude_prime> => [ I<list of hashes> ... ]
+
+Rejects the melody should it contain notes comprising the specified
+prime forms. The I<ps> value pitch set must be in B<prime_form>.
+
+  exclude_prime => [
+    { ps => [ 0, 3, 7 ], in => 4 }, # major or minor triad, any guise
+    { ps => [ 0, 2, 5, 8 ], },         # 7th, any guise, exact
+    { ps => [ 0, 2, 4, 6 ], in => 5 }, # whole tone formation
+  ],
+
+Additionally, a I<subsets> key can be used to apply the rule to any
+subset prime form pitch set of the input pitch set. For example, to
+exclude 5 or 6 note subsets of the 7-35 pitch set:
+
+  exclude_prime => [ {
+    in => 8,                  # in 8 (or 7 or 6) note groups
+    subsets => [ 5, 6 ],
+    ps => [ 0, 1, 3, 5, 6, 8, 10 ],   # 7-35 (major/minor scale)
+  }, ],
+
+This method probably should not be used for smaller subsets than five,
+as sets like 7-35 or larger have many subsets in the 4-x (13 prime form
+subsets, to be exact) or smaller range, and with the prime form
+conflation of multiple other "half prime" sets, well more pitches than
+one might expect can match the rule.
+
+=back
+
+=head2 B<circular_permute> I<pitch_set>
 
 Takes a pitch set (array reference to list of pitches or just a
 list of such), and returns an array reference of pitch set
@@ -1173,7 +1548,7 @@ B<invert> method offered by this module. See also B<rotate> to rotate a
 pitch set by a particular amount, or B<rotateto> to search for something
 to rotate to.
 
-=item B<complement> I<pitch_set>
+=head2 B<complement> I<pitch_set>
 
 Returns the pitches of the scale degrees not set in the passed pitch set
 (an array reference to list of pitches or just a list of such).
@@ -1183,20 +1558,55 @@ Returns the pitches of the scale degrees not set in the passed pitch set
 Calling B<prime_form> on the result will find the abstract complement of
 the original set, whatever that means.
 
-=item B<fnums>
+=head2 B<fnums>
 
 Returns hash reference of which keys are Forte Numbers and values are
 array references to the corresponding pitch sets. This reference should
 perhaps not be fiddled with, unless the fiddler desires different
 results for the B<forte2pcs> and B<pcs2forte> calls.
 
-=item B<forte2pcs> I<forte_number>
+=head2 B<forte2pcs> I<forte_number>
 
 Given a Forte Number (such as C<6-z44> or C<6-Z44>), returns the
 corresponding pitch set as an array reference, or C<undef> if an unknown
 Forte Number is supplied.
 
-=item B<interval_class_content> I<pitch_set>
+=head2 B<gen_melody> I<params> ...
+
+Generates a random 12-tone series, feeds that to B<check_melody>, tries
+for a number of times until a suitable melody can be returned as an
+array reference. May throw an exception if something goes awry or the
+rules did not permit a melody. The 12-tone series will remain within a
+single register, so the generation of melodies with 9ths or 10ths is
+not possible via this method.
+
+See B<check_melody> for documentation on the parameters; setting these
+is mandatory. B<gen_melody> offers one additional parameter to set the
+tessitura of the melody (in semitones; default is a 10th):
+
+  $atu->gen_melody( melody_max_interval => 11, ... );
+
+=head2 B<half_prime_form> I<pitch_set>
+
+Returns the "half prime" or "more normal" form of a pitch set; in scalar
+context returns an array reference to the resulting pitch set, while in
+list context returns an array reference and a subsequent hash reference
+containing a mapping of pitch set numbers to the original pitches (as
+also done by B<normal_form>).
+
+This form in particular can distinguish pitch sets that are C<[0,3,7]>
+from those that are C<[0,4,7]> which B<prime_form> will conflate as
+C<[0,3,7]> and B<normal_form> does not go far enough to compare
+different guises of these two different "half prime" classes. Note
+that some pitch sets have no "half prime form" distinct from the prime
+form; this distinction influences what L<Music::NeoRiemannianTonnetz>
+can do with the pitch set, for example (see C<eg/nrt-study-setclass>
+of that module).
+
+(The "half prime form" name is my invention; I have no idea if there is
+another term for this calculation extant in music theory literature.)
+
+=head2 B<interval_class_content> I<pitch_set>
 
 Given a pitch set with at least two elements, returns an array reference
 (and in list context also a hash reference) representing the
@@ -1212,20 +1622,20 @@ Uses include an indication of invariance under transposition; see also
 the B<invariants> mode of C<atonal-util> of L<App::MusicTools> for the
 display of invariant pitches.
 
-=item B<intervals2pcs> I<start_pitch>, I<interval_set>
+=head2 B<intervals2pcs> I<start_pitch>, I<interval_set>
 
 Given a starting pitch (set to C<0> if unsure) and an interval set (a
 list of intervals or array reference of such), converts those intervals
 into a pitch set, returned as an array reference.
 
-=item B<invariance_matrix> I<pitch_set>
+=head2 B<invariance_matrix> I<pitch_set>
 
 Returns reference to an array of references that comprise the invariance
 under Transpose(N)Inversion operations on the given pitch set. Probably
 easier to use the B<invariants> mode of C<atonal-util> of
 L<App::MusicTools>, unless you know what you are doing.
 
-=item B<invert> I<axis>, I<pitch_set>
+=head2 B<invert> I<axis>, I<pitch_set>
 
 Inverts the given pitch set, within the degrees in scale. Set the
 I<axis> to C<0> if unsure. Returns resulting pitch set as an array
@@ -1241,20 +1651,31 @@ Has the "retrograde-inverse transposition" of C<0 11 3> becoming C<4 8
   $p = $atu->invert(6, $p);
   $p = $atu->transpose(1, $p);
 
-=item B<lastn> I<array_ref>, I<n>
+=head2 B<lastn> I<array_ref>, I<n>
 
 Utility method. Returns the last N elements of the supplied array
 reference, or the entire list if N exceeds the number of elements
 available. Returns nothing if the array reference is empty, but
 otherwise will throw an exception if something is awry.
 
-=item B<multiply> I<factor>, I<pitch_set>
+=head2 B<multiply> I<factor>, I<pitch_set>
 
 Multiplies the supplied pitch set by the given factor, modulates the
 results by the B<scale_degrees> setting, and returns the results as an
 array reference.
 
-=item B<nexti> I<array ref>
+=head2 B<new> I<parameter_pairs ...>
+
+Constructor. The degrees in the scale can be adjusted via:
+
+  Music::AtonalUtil->new(DEG_IN_SCALE => 17);
+
+or some other positive integer greater than one, to use a non-12-tone
+basis for subsequent method calls. This value can be set or inspected
+via the B<scale_degrees> call. B<Note that while non-12-tone systems are
+in theory supported, they have not really been tested.>
+
+=head2 B<nexti> I<array ref>
 
 Utility method. Returns the next item from the supplied array reference.
 Loops around to the beginning of the list if the bounds of the array are
@@ -1285,7 +1706,7 @@ reference. Does not advance the index.
 
 =back
 
-=item B<normal_form> I<pitch_set>
+=head2 B<normal_form> I<pitch_set>
 
 Returns two values in list context; first, the normal form of the passed
 pitch set as an array reference, and secondly, a hash reference linking
@@ -1326,7 +1747,7 @@ link method.
 See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
 take on normal and prime forms.
 
-=item B<pcs2bits> I<pitch_set>
+=head2 B<pcs2bits> I<pitch_set>
 
 Converts a I<pitch_set> into a B<scale_degrees>-bit number.
 
@@ -1344,19 +1765,19 @@ applied as desired.
     ...
   }
 
-=item B<pcs2forte> I<pitch_set>
+=head2 B<pcs2forte> I<pitch_set>
 
 Given a pitch set, returns the Forte Number of that set. The Forte
 Numbers use lowercase C<z>, for example C<6-z44>. C<undef> will be
 returned if no Forte Number exists for the pitch set.
 
-=item B<pcs2intervals> I<pitch_set>
+=head2 B<pcs2intervals> I<pitch_set>
 
 Given a pitch set of at least two elements, returns the list of
 intervals between those pitch elements. This list is returned as an
 array reference.
 
-=item B<pcs2str> I<pitch_set>
+=head2 B<pcs2str> I<pitch_set>
 
 Given a pitch set (or string with commas in it) returns the pitch set as
 a string in C<[0,1,2]> form.
@@ -1365,13 +1786,13 @@ a string in C<[0,1,2]> form.
   $atu->pcs2str(0,3,7)     # "[0,3,7]"
   $atu->pcs2str("0,3,7")   # "[0,3,7]"
 
-=item B<pitch2intervalclass> I<pitch>
+=head2 B<pitch2intervalclass> I<pitch>
 
 Returns the interval class a given pitch belongs to (0 is 0, 11 maps
 down to 1, 10 down to 2, ... and 6 is 6 for the standard 12 tone
 system). Used internally by the B<interval_class_content> method.
 
-=item B<prime_form> I<pitch_set>
+=head2 B<prime_form> I<pitch_set>
 
 Returns the prime form of a given pitch set (via B<normal_form> and
 various other operations on the passed pitch set) as an array reference.
@@ -1379,7 +1800,7 @@ various other operations on the passed pitch set) as an array reference.
 See also B<normalize> of L<Music::NeoRiemannianTonnetz> for a different
 take on normal and prime forms.
 
-=item B<reflect_pitch> I<pitch>, I<min>, I<max>
+=head2 B<reflect_pitch> I<pitch>, I<min>, I<max>
 
 Utility method. Constrains the supplied pitch to reside within the
 supplied minimum and maximum limits, by "reflecting" the pitch back off
@@ -1392,18 +1813,18 @@ This may be of use in a L<Music::LilyPondUtil> C<*_pitch_hook> function
 to keep the notes within a certain range (modulus math, by contrast,
 produces a sawtooth pattern with occasional leaps).
 
-=item B<retrograde> I<pitch_set>
+=head2 B<retrograde> I<pitch_set>
 
 Fancy term for the C<reverse> of a list. Returns reference to array of
 said reversed list.
 
-=item B<rotate> I<rotate_by>, I<pitch_set>
+=head2 B<rotate> I<rotate_by>, I<pitch_set>
 
 Rotates the members given pitch set by the given integer. Returns an
 array reference of the resulting pitch set. (B<circular_permute>
 performs all the possible rotations for a pitch set.)
 
-=item B<rotateto> I<what>, I<dir>, I<pitch_set>
+=head2 B<rotateto> I<what>, I<dir>, I<pitch_set>
 
 Utility method. Rotates (via B<rotate>) a given array reference to the
 desired element I<what> (using string comparisons). Returns an array
@@ -1414,14 +1835,14 @@ I<what> is searched for from the first element and subsequent elements,
 assuming a positive I<dir> value. Set a negative I<dir> to invert the
 direction of the search.
 
-=item B<scale_degrees> I<optional_integer>
+=head2 B<scale_degrees> I<optional_integer>
 
 Without arguments, returns the number of scale degrees (12 by default).
 If passed a positive integer greater than two, sets the scale degrees to
 that. Note that changing this will change the results from almost all
 the methods this module offers, and has not been tested.
 
-=item B<set_complex> I<pitch_set>
+=head2 B<set_complex> I<pitch_set>
 
 Computes the set complex, or a 2D array with the pitch set as the column
 headers, pitch set inversion as the row headers, and the combination of
@@ -1431,56 +1852,56 @@ reference to the resulting array of arrays.
 Ideally the first pitch of the input pitch set should be 0 (so the input
 may need reduction to B<prime_form> first).
 
-=item B<subsets> I<length>, I<pitch_set>
+=head2 B<subsets> I<length>, I<pitch_set>
 
-Returns the subsets of a given pitch set. I<length> should be, say, C<-1>
-to select for pitch sets of one element less, or a positive value of
-a magnitude less than the pitch set to reduce to a specific size.
+Returns the subsets of a given pitch set as an array of array refs.
+I<length> should be C<-1> to select for pitch sets of one element less,
+or a positive value of a magnitude less than the pitch set to return the
+subsets of a specific magnitude.
 
   $atu->subsets(-1, [0,3,7])  # different ways to say same thing
   $atu->subsets( 2, [0,3,7])
 
-It may make sense to first run the I<pitch_set> through B<normal_form>
-or B<prime_form> to normalize the data. Or not, depending.
+The input set will be modulated to the B<scale_degrees> limit, and any
+duplicate pitches excluded before the subsets are generated. The return
+sets might be further reduced by the caller via B<half_prime_form> or
+B<prime_form> or some other method to (sometimes) effect an even greater
+reduction in the number of subsets. However, by default, no such
+reduction is done by this method, beyond initial input set sanitization.
 
-The underlying permutation library might sort or otherwise return the
-results in arbitrary orderings. Sorry about that.
-
-=item B<tcs> I<pitch_set>
+=head2 B<tcs> I<pitch_set>
 
 Returns array reference consisting of the transposition common-tone
 structure (TCS) for the given pitch set, that is, for each of the
 possible transposition operations under the B<scale_degrees> in
 question, how many common tones there are with the original set.
 
-=item B<tcis> I<pitch_set>
+=head2 B<tcis> I<pitch_set>
 
 Like B<tcs>, except uses B<transpose_invert> instead of just
 B<transpose>.
 
-=item B<transpose> I<transpose_by>, I<pitch_set>
+=head2 B<transpose> I<transpose_by>, I<pitch_set>
 
 Transposes the given pitch set by the given integer value in
 I<transpose_by>. Returns the result as an array reference.
 
-=item B<transpose_invert> I<transpose_by>, I<axis>, I<pitch_set>
+=head2 B<transpose_invert> I<transpose_by>, I<axis>, I<pitch_set>
 
 Performs B<invert> on given pitch set (set I<axis> to C<0> if unsure),
 then transposition as per B<transpose>. Returns the result as an array
 reference.
 
-=item B<variances> I<pitch_set1>, I<pitch_set2>
+=head2 B<variances> I<pitch_set1>, I<pitch_set2>
 
 Given two pitch sets, in scalar context returns the shared notes of
 those two pitch sets as an array reference. In list context, returns the
 shared notes (intersection), difference, and union as array references.
 
-=item B<zrelation> I<pitch_set1>, I<pitch_set2>
+=head2 B<zrelation> I<pitch_set1>, I<pitch_set2>
 
 Given two pitch sets, returns true if the two sets share the same
 B<interval_class_content>, false if not.
-
-=back
 
 =head1 CHANGES
 
@@ -1521,9 +1942,7 @@ Reference and learning material:
 
 =item *
 
-The perlreftut, perldsc, and perllol perldocs to learn more about perl
-references, as the pitch sets utilize array references and arrays of
-array references.
+L<http://en.wikipedia.org/wiki/Forte_number>
 
 =item *
 
@@ -1531,15 +1950,21 @@ L<http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/>
 
 =item *
 
-Musimathics, Vol. 1, p.311-317
+Musimathics, Vol. 1, p.311-317 by Gareth Loy.
+
+=item *
+
+"Serial Composition" by Smith-Brindle Reginald.
 
 =item *
 
 "The Structure of Atonal Music" by Allen Forte.
 
-=item *
+=back
 
-L<http://en.wikipedia.org/wiki/Forte_number>
+Additional Perl resources for music include:
+
+=over 4
 
 =item *
 
