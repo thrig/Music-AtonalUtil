@@ -26,17 +26,18 @@ is( $atu->scale_degrees, 12, 'expect 12 degrees in scale by default' );
 $deeply->( $atu->bits2pcs(137), [ 0, 3, 7 ], 'bits to pitch set' );
 
 $deeply->(
-  [ $atu->check_melody( [qw/0 2 4 6/], dup_interval_limit => 3 ) ],
+  [ $atu->check_melody( { dup_interval_limit => 3 }, [qw/0 2 4 6/] ) ],
   [ 0, "dup_interval_limit" ],
   'check_melody duplicate intervals'
 );
 
 $deeply->(
   [ $atu->check_melody(
-      [qw/60 64 57 59 60 57 65 64 62 67 72/],
-      exclude_interval => [
-        { iset => [ 5, 5 ], },    # adjacent fourths ("cadential basses")
-      ],
+      { exclude_interval => [
+          { iset => [ 5, 5 ], },    # adjacent fourths ("cadential basses")
+        ],
+      },
+      [qw/60 64 57 59 60 57 65 64 62 67 72/]
     )
   ],
   [ 0, "exclude_interval", { index => 8, selection => [ 5, 5 ] } ],
@@ -45,8 +46,8 @@ $deeply->(
 
 $deeply->(
   [ $atu->check_melody(
-      [qw/0 5 1 1 1 1 1 0 5/],
-      exclude_interval => [ { iset => [ 5, 5 ], in => 8 }, ],
+      { exclude_interval => [ { iset => [ 5, 5 ], in => 8 }, ], },
+      [qw/0 5 1 1 1 1 1 0 5/]
     )
   ],
   [ 0,
@@ -61,7 +62,8 @@ $deeply->(
 
 $deeply->(
   [ $atu->check_melody(
-      [qw/0 3 2/], exclude_interval => [ { iset => [ 1, 3 ], sort => 1 }, ],
+      { exclude_interval => [ { iset => [ 1, 3 ], sort => 1 }, ], },
+      [qw/0 3 2/]
     )
   ],
   [ 0, "exclude_interval", { index => 0, selection => [ 3, 1 ] } ],
@@ -70,10 +72,11 @@ $deeply->(
 
 $deeply->(
   [ $atu->check_melody(
-      [qw/4 7 5 0/],
-      exclude_prime => [
-        { ps => [ 0, 3, 7 ], in => 4 },    # major or minor triad, any guise
-      ]
+      { exclude_prime => [
+          { ps => [ 0, 3, 7 ], in => 4 },    # major or minor triad, any guise
+        ],
+      },
+      [qw/4 7 5 0/]
     )
   ],
   [ 0,
@@ -85,12 +88,13 @@ $deeply->(
 
 $deeply->(
   [ $atu->check_melody(
-      [qw/0 2 4 5 7/],    # c major scale run
-      exclude_prime => [
-        # 7-35 (major/minor scale) but also excluding from all 5-x or
-        # 6-x subsets of said set
-        { ps => [ 0, 1, 3, 5, 6, 8, 10 ], subsets => [ 6, 5 ] },
-      ]
+      { exclude_prime => [
+          # 7-35 (major/minor scale) but also excluding from all 5-x or
+          # 6-x subsets of said set
+          { ps => [ 0, 1, 3, 5, 6, 8, 10 ], subsets => [ 6, 5 ] },
+        ],
+      },
+      [qw/0 2 4 5 7/]    # c major scale run
     )
   ],
   [ 0, "exclude_prime", { index => 0, selection => [ 0, 2, 4, 5, 7 ] } ],
@@ -99,23 +103,16 @@ $deeply->(
 
 $deeply->(
   [ $atu->check_melody(
-      [qw/0 1 5 7 11 12/],
-      exclude_half_prime => [
-        { ps => [ 0, 4, 5 ], in => 3 },    # leading tone/tonic/dominant
-      ]
+      { exclude_half_prime => [
+          { ps => [ 0, 4, 5 ], in => 3 },    # leading tone/tonic/dominant
+        ],
+      },
+      [qw/0 1 5 7 11 12/]
     )
   ],
   [ 0, "exclude_half_prime", { index => 3, selection => [ 7, 11, 12 ] } ],
   'check_melody harmonic cadence'
 );
-
-# this is [0,1,5] or [0,4,5], with latter being the lt/T/D cadence, so
-# only want to exclude the later(? - other involves a 4th so might be
-# some other cadential form, but nothing obvious to my ear) -- import
-# "half prime" code from M::NRT? (and also confirm that my normal_form
-# does the right thing, or whether it too needs to do what the M::NRT
-# code does)
-#     { ps => [ 0, 1, 5 ], },       # leading tone/tonic/dominant (cadence)
 
 $deeply->(
   $atu->circular_permute( [ 0, 1, 2 ] ),

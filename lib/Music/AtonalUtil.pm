@@ -18,7 +18,7 @@ use List::Util qw/shuffle/;
 use List::MoreUtils qw/firstidx lastidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 my $DEG_IN_SCALE = 12;
 
@@ -515,7 +515,9 @@ sub bits2pcs {
 # passed in via the params hash (based on Smith-Brindle Reginald's
 # "Serial Composition" discussion of atonal melody construction).
 sub check_melody {
-  my ( $self, $melody, %params ) = @_;
+  my $self = shift;
+  my $params = shift;
+  my $melody = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
   my $rules_applied = 0;
 
@@ -526,16 +528,16 @@ sub check_melody {
     push @intervals, $ival;
   }
 
-  if ( exists $params{dup_interval_limit} ) {
+  if ( exists $params->{dup_interval_limit} ) {
     for my $icount ( values %intervals ) {
-      if ( $icount >= $params{dup_interval_limit} ) {
+      if ( $icount >= $params->{dup_interval_limit} ) {
         return wantarray ? ( 0, "dup_interval_limit" ) : 0;
       }
     }
     $rules_applied++;
   }
 
-  for my $ruleset ( @{ $params{exclude_interval} || [] } ) {
+  for my $ruleset ( @{ $params->{exclude_interval} || [] } ) {
     croak "no interval set in exclude_interval rule"
       if not exists $ruleset->{iset}
       or ref $ruleset->{iset} ne 'ARRAY';
@@ -561,7 +563,7 @@ sub check_melody {
     my $ps_rule   = $ps_ref->[0];
     my $ps_method = $ps_ref->[1];
 
-    for my $ruleset ( @{ $params{$ps_rule} || [] } ) {
+    for my $ruleset ( @{ $params->{$ps_rule} || [] } ) {
       croak "no pitch set in $ps_rule rule"
         if not exists $ruleset->{ps}
         or ref $ruleset->{ps} ne 'ARRAY';
@@ -710,7 +712,7 @@ sub gen_melody {
         $_ += $melody_low for @melody;
       }
 
-      ( $got_melody, my $msg ) = $self->check_melody( \@melody, %params );
+      ( $got_melody, my $msg ) = $self->check_melody( \%params, \@melody );
       next ATTEMPT if $got_melody != 1;
 
       last;
@@ -1454,7 +1456,7 @@ Converts a number into a I<pitch_set>, and returns said set as an array
 reference. Performs opposite role of the B<pcs2bits> method. Will not
 consider bits beyond B<scale_degrees> in the input number.
 
-=head2 B<check_melody> I<pitch_set>, I<params> ...
+=head2 B<check_melody> I<params ref>, I<pitch_set>
 
 Given a melody (array reference of pitch numbers), and a set of
 parameters, returns false if the melody fails any of the rules present
