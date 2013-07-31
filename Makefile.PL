@@ -13,7 +13,6 @@ my %params = (
     'Algorithm::Combinatorics' => 0,
     Carp                       => 0,
     'List::Util'               => 0,
-    'List::MoreUtils'          => 0,
     'Scalar::Util'             => 0,
     'Test::More'               => 0,
   },

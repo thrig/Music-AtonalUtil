@@ -15,10 +15,9 @@ use warnings;
 use Algorithm::Combinatorics qw/combinations/;
 use Carp qw/croak/;
 use List::Util qw/shuffle/;
-use List::MoreUtils qw/firstidx lastidx uniq/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 my $DEG_IN_SCALE = 12;
 
@@ -515,7 +514,7 @@ sub bits2pcs {
 # passed in via the params hash (based on Smith-Brindle Reginald's
 # "Serial Composition" discussion of atonal melody construction).
 sub check_melody {
-  my $self = shift;
+  my $self   = shift;
   my $params = shift;
   my $melody = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
@@ -805,7 +804,8 @@ sub interval_class_content {
   my $self = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  my @nset = sort { $a <=> $b } uniq @$pset;
+  my %seen;
+  my @nset = sort { $a <=> $b } grep { !$seen{$_}++ } @$pset;
   croak 'pitch set must contain at least two elements' if @nset < 2;
 
   my %icc;
@@ -1226,12 +1226,16 @@ sub rotateto {
   croak 'nothing to search on' unless defined $what;
   croak 'nothing to rotate on' if !@$pset;
 
-  $dir //= 1;
-  my $method = $dir < 0 ? \&lastidx : \&firstidx;
+  my @idx = 0 .. $#$pset;
 
-  my $index = $method->( sub { $_ eq $what }, @$pset );
-  croak "no such element $what" if $index == -1;
-  return $self->rotate( -$index, $pset );
+  $dir //= 1;
+  @idx = reverse @idx if $dir < 0;
+
+  for my $i (@idx) {
+    next unless $pset->[$i] eq $what;
+    return $self->rotate( -$i, $pset );
+  }
+  croak "no such element $what";
 }
 
 # XXX probably should disallow changing this on the fly, esp. if allow
@@ -1276,7 +1280,10 @@ sub subsets {
   my $len  = shift;
   my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
 
-  my @nset = uniq map { my $p = $_ % $self->{_DEG_IN_SCALE}; $p } @$pset;
+  my %seen;
+  my @nset =
+    map { my $p = $_ % $self->{_DEG_IN_SCALE}; !$seen{$p}++ ? $p : () }
+    @$pset;
   croak 'pitch set must contain two or more unique pitches' if @nset < 2;
 
   if ( defined $len ) {
