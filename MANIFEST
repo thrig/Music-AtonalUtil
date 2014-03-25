@@ -3,6 +3,7 @@ LICENSE
 MANIFEST
 Makefile.PL
 README
+SIGNATURE
 eg/fortefy
 lib/Music/AtonalUtil.pm
 t/Music-AtonalUtil.t

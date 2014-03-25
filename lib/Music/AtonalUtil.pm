@@ -17,7 +17,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 my $DEG_IN_SCALE = 12;
 
@@ -1829,9 +1829,9 @@ said reversed list.
 
 =head2 B<rotate> I<rotate_by>, I<pitch_set>
 
-Rotates the members given pitch set by the given integer. Returns an
-array reference of the resulting pitch set. (B<circular_permute>
-performs all the possible rotations for a pitch set.)
+Rotates the pitch set by the integer supplied as the first argument. Returns an
+array reference of the resulting pitch set. (B<circular_permute> performs all
+the possible rotations for a pitch set.)
 
 =head2 B<rotateto> I<what>, I<dir>, I<pitch_set>
 
