@@ -126,6 +126,9 @@ $deeply->(
   'pitch set complement'
 );
 
+can_ok( $atu, 'forte_number_re' );
+ok( '6-z44' =~ $atu->forte_number_re, 'use forte number regex' );
+
 $deeply->( $atu->forte2pcs('6-Z44'), [ 0, 1, 2, 5, 6, 9 ], 'Forte to PCS1' );
 $deeply->( $atu->forte2pcs('6-z44'), [ 0, 1, 2, 5, 6, 9 ], 'Forte to PCS2' );
 
@@ -149,8 +152,7 @@ $deeply->(
 
 $deeply->(
   scalar $atu->interval_class_content(
-    [qw/9 0 2 4 6 4 2 11 7 9 11 0 9 8 9 11 8 4/]
-  ),
+    [qw/9 0 2 4 6 4 2 11 7 9 11 0 9 8 9 11 8 4/] ),
   [qw/4 6 5 5 6 2/],
   'icc icv of non-unique pitch set'
 );
@@ -198,9 +200,7 @@ $deeply->(
 );
 
 $deeply->(
-  ( $atu->normal_form(
-      [ map { my $s = $_ + 24; $s } 6, 6, 7, 2, 2, 1, 3, 3, 3 ]
-    )
+  ( $atu->normal_form( [ map { my $s = $_ + 24; $s } 6, 6, 7, 2, 2, 1, 3, 3, 3 ] )
   )[0],
   [ 1, 2, 3, 6, 7 ],
   'normal form non-base-register pitches'
@@ -341,8 +341,7 @@ $atu->seti( \@notes, 4 );
 ok( $atu->nexti( \@notes ) eq 'a', 'nexti' );
 
 $deeply->( [ $atu->lastn( [qw/a b c/] ) ], [qw/b c/], 'lastn default' );
-$deeply->( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/],
-  'lastn overflow' );
+$deeply->( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/], 'lastn overflow' );
 $atu = Music::AtonalUtil->new( lastn => 3 );
 $deeply->( [ $atu->lastn( [qw/a b c/] ) ], [qw/a b c/], 'lastn custom n' );
 
@@ -377,4 +376,4 @@ is( $stu->scale_degrees, 17, 'custom number of scale degrees' );
 #my $melody = Music::AtonalUtil->new->gen_melody;
 #diag("melody for this test is: @$melody");
 
-plan tests => 77;
+plan tests => 79;

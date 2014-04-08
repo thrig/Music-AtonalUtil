@@ -17,7 +17,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 my $DEG_IN_SCALE = 12;
 
@@ -444,6 +444,8 @@ my $PCS2FORTE = {
   '0,4,8'              => '3-12',
 };
 
+my $FORTE_NUMBER_RE = qr/[3-9]-[zZ]?\d{1,2}/;
+
 ########################################################################
 #
 # SUBROUTINES
@@ -640,6 +642,10 @@ sub complement {
 }
 
 sub fnums { $FORTE2PCS }
+
+sub forte_number_re {
+  return $FORTE_NUMBER_RE;
+}
 
 sub forte2pcs {
   my ( $self, $forte_number ) = @_;
@@ -1573,6 +1579,10 @@ Returns hash reference of which keys are Forte Numbers and values are
 array references to the corresponding pitch sets. This reference should
 perhaps not be fiddled with, unless the fiddler desires different
 results for the B<forte2pcs> and B<pcs2forte> calls.
+
+=head2 B<forte_number_re>
+
+Returns a regular expression capable of matching a Forte Number.
 
 =head2 B<forte2pcs> I<forte_number>
 
