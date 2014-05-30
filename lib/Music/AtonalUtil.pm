@@ -488,8 +488,7 @@ sub _apply_melody_rule {
           $sel_audit = $code->( $self, $subsel );
           @$sel_audit = sort { $a <=> $b } @$sel_audit if $flag_sort;
           if ( "@$sel_audit" eq "@$check_set" ) {
-            return 0,
-              { context => \@selection, index => $i, selection => $subsel };
+            return 0, { context => \@selection, index => $i, selection => $subsel };
           }
         }
       }
@@ -658,7 +657,7 @@ sub gen_melody {
   my ( $self, %params ) = @_;
 
   my $attempts = 1000;    # enough for Helen, enough for us
-  my $max_interval = $params{melody_max_interval} || 16; # tessitura of a 10th
+  my $max_interval = $params{melody_max_interval} || 16;    # tessitura of a 10th
   delete $params{melody_max_interval};
 
   if ( !keys %params ) {
@@ -1020,8 +1019,7 @@ sub normal_form {
 
     for my $eidx ( 0 .. $#$equivs ) {
       my $span =
-        ( $equivs->[$eidx][$i] - $equivs->[$eidx][0] )
-        % $self->{_DEG_IN_SCALE};
+        ( $equivs->[$eidx][$i] - $equivs->[$eidx][0] ) % $self->{_DEG_IN_SCALE};
       if ( $span < $min_span ) {
         $min_span     = $span;
         @min_span_idx = $eidx;
@@ -1288,8 +1286,7 @@ sub subsets {
 
   my %seen;
   my @nset =
-    map { my $p = $_ % $self->{_DEG_IN_SCALE}; !$seen{$p}++ ? $p : () }
-    @$pset;
+    map { my $p = $_ % $self->{_DEG_IN_SCALE}; !$seen{$p}++ ? $p : () } @$pset;
   croak 'pitch set must contain two or more unique pitches' if @nset < 2;
 
   if ( defined $len ) {
@@ -1397,8 +1394,7 @@ sub variances {
     push @union, $p;
     push @{ $count{$p} > 1 ? \@intersection : \@difference }, $p;
   }
-  return
-    wantarray ? ( \@intersection, \@difference, \@union ) : \@intersection;
+  return wantarray ? ( \@intersection, \@difference, \@union ) : \@intersection;
 }
 
 sub zrelation {
@@ -1639,7 +1635,7 @@ L<https://en.wikipedia.org/wiki/Interval_vector>
 
 Uses include an indication of invariance under transposition; see also
 the B<invariants> mode of C<atonal-util> of L<App::MusicTools> for the
-display of invariant pitches.
+display of invariant pitches. It also has uses in rhythmic analysis.
 
 =head2 B<intervals2pcs> I<start_pitch>, I<interval_set>
 
@@ -1689,10 +1685,12 @@ Constructor. The degrees in the scale can be adjusted via:
 
   Music::AtonalUtil->new(DEG_IN_SCALE => 17);
 
-or some other positive integer greater than one, to use a non-12-tone
-basis for subsequent method calls. This value can be set or inspected
-via the B<scale_degrees> call. B<Note that while non-12-tone systems are
-in theory supported, they have not really been tested.>
+or some other positive integer greater than one, to use a non-12-tone basis for
+subsequent method calls. This value can be set or inspected via the
+B<scale_degrees> call. B<Note that while non-12-tone systems are in theory
+supported, they have not really been tested.> Modern rhythmic analysis overlaps
+with some of the routines available in this code; this might be a practical use
+for a different number of degrees in the "scale." See L</"RHYTHM"> for ideas.
 
 =head2 B<nexti> I<array ref>
 
@@ -1953,11 +1951,41 @@ would likely entail a Project that would unify a whole bunch of
 C<Music::*> modules into some grand unified PerlMusic thingy, though I
 am busy doing other things, so will not be writing that).
 
+=head1 RHYTHM
+
+Rhythmic analysis might begin with:
+
+  Music::AtonalUtil->new(DEG_IN_SCALE => 16);
+
+Assuming 16 beats in a measure, as per the Godfried Toussaint article (L</"SEE
+ALSO">), the "clave Son" rhythm that in lilypond might run something like C<c8.
+c16 r8 c8 r8 c8 c4> could be represented using the "onset-coordinate vector"
+notation of C<(0,3,6,10,12)> and perhaps passed to such routines as
+B<interval_class_content> for subsequent analysis. For example, a measure of
+evenness (the sum of the interval arc-lengths) can be obtained via:
+
+  use Music::AtonalUtil ();
+  my $atu = Music::AtonalUtil->new( DEG_IN_SCALE => 16 );
+
+  my $ics = ( $atu->interval_class_content( 0, 3, 6, 10, 12 ) )[1];
+  my $sum = 0;
+  for my $k ( keys %$ics ) {
+    $sum += $k * $ics->{$k};
+  }
+
+See C<atonal-util> of L<App::MusicTools> for B<beats2set> and B<set2beats>, for
+beat pattern to "pitch" set conversions.
+
 =head1 SEE ALSO
 
-Reference and learning material:
+Reference and learning material (mostly where I learned from):
 
 =over 4
+
+=item *
+
+"Computational geometric aspects of rhythm, melody, and voice-leading" by
+Godfried Toussaint (and other rhythm articles by the same).
 
 =item *
 
@@ -1965,11 +1993,11 @@ L<http://en.wikipedia.org/wiki/Forte_number>
 
 =item *
 
-L<http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/>
+Musimathics, Vol. 1, p.311-317 by Gareth Loy.
 
 =item *
 
-Musimathics, Vol. 1, p.311-317 by Gareth Loy.
+L<http://www.mta.ca/faculty/arts-letters/music/pc-set_project/pc-set_new/>
 
 =item *
 
@@ -2004,7 +2032,7 @@ Jeremy Mates, E<lt>jmates@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2012-2013 by Jeremy Mates
+Copyright (C) 2012-2014 by Jeremy Mates
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself, either Perl version 5.16 or, at
