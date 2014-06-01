@@ -17,7 +17,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.08';
+our $VERSION = '1.09';
 
 my $DEG_IN_SCALE = 12;
 
