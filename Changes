@@ -1,4 +1,5 @@
-See the git repository. Notable changes:
-
+ * 1.10 added mininterval.
  * gen_melody, check_melody created in 1.03, might see future
    changes in API.
+
+Otherwise, see the git repository.

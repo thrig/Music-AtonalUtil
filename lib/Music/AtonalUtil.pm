@@ -17,7 +17,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.09';
+our $VERSION = '1.10';
 
 my $DEG_IN_SCALE = 12;
 
@@ -900,6 +900,30 @@ sub lastn {
   return @{$pset}[ $len .. -1 ];
 }
 
+sub mininterval {
+  my ( $self, $from, $to ) = @_;
+  my $dir = 1;
+
+  croak 'from pitch must be a number' unless looks_like_number $from;
+  croak 'to pitch must be a number'   unless looks_like_number $to;
+
+  $from %= $self->{_DEG_IN_SCALE};
+  $to   %= $self->{_DEG_IN_SCALE};
+
+  if ( $from > $to ) {
+    ( $from, $to ) = ( $to, $from );
+    $dir = -1;
+  }
+  my $interval = $to - $from;
+  if ( $interval > $self->{_DEG_IN_SCALE} / 2 ) {
+    $dir *= -1;
+    $from += $self->{_DEG_IN_SCALE};
+    $interval = $from - $to;
+  }
+
+  return $interval * $dir;
+}
+
 sub multiply {
   my $self   = shift;
   my $factor = shift;
@@ -1633,9 +1657,10 @@ absolute pitch-class interval (APIC) vector:
 
 L<https://en.wikipedia.org/wiki/Interval_vector>
 
-Uses include an indication of invariance under transposition; see also
-the B<invariants> mode of C<atonal-util> of L<App::MusicTools> for the
-display of invariant pitches. It also has uses in rhythmic analysis.
+Uses include an indication of invariance under transposition; see also the
+B<invariants> mode of C<atonal-util> of L<App::MusicTools> for the display of
+invariant pitches. It also has uses in rhythmic analysis (see works by e.g.
+Godfried T. Toussaint).
 
 =head2 B<intervals2pcs> I<start_pitch>, I<interval_set>
 
@@ -1672,6 +1697,12 @@ Utility method. Returns the last N elements of the supplied array
 reference, or the entire list if N exceeds the number of elements
 available. Returns nothing if the array reference is empty, but
 otherwise will throw an exception if something is awry.
+
+=head2 B<mininterval> I<from>, I<to>
+
+Returns the minimum interval including sign between the given pitch numbers
+within the confines of the B<scale_degrees>; that is, C to F would be five, F
+to C negative five, B to C one, and C to B negative one.
 
 =head2 B<multiply> I<factor>, I<pitch_set>
 

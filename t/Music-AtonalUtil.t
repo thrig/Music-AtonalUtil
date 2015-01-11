@@ -175,6 +175,14 @@ $deeply->(
 
 $deeply->( $atu->invert( 0, [ 0, 4, 7 ] ), [ 0, 8, 5 ], 'invert something' );
 
+is( $atu->mininterval( 0,  0 ),  0,  "c to c is 0" );
+is( $atu->mininterval( 0,  5 ),  5,  "c to f is 5" );
+is( $atu->mininterval( 5,  0 ),  -5, "f to c down by 5" );
+is( $atu->mininterval( 0,  7 ),  -5, "c g goes down" );
+is( $atu->mininterval( 7,  0 ),  5,  "g c goes up" );
+is( $atu->mininterval( 0,  11 ), -1, "c to b one down" );
+is( $atu->mininterval( 11, 0 ),  1,  "b to c one up" );
+
 $deeply->(
   $atu->multiply( 5, [ 10, 9, 0, 11 ] ),
   [ 2, 9, 0, 7 ],
@@ -376,4 +384,4 @@ is( $stu->scale_degrees, 17, 'custom number of scale degrees' );
 #my $melody = Music::AtonalUtil->new->gen_melody;
 #diag("melody for this test is: @$melody");
 
-plan tests => 79;
+plan tests => 86;
