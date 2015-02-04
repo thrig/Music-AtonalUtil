@@ -17,7 +17,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle/;
 use Scalar::Util qw/looks_like_number/;
 
-our $VERSION = '1.10';
+our $VERSION = '1.11';
 
 my $DEG_IN_SCALE = 12;
 
@@ -2051,9 +2051,9 @@ means of wrangling music.
 
 =item *
 
-L<Music::LilyPondUtil> for where the pitch-number to lilypond-note-name
-code has been moved to, and L<App::MusicTools> for where the command
-line utilities have been stashed, e.g. C<atonal-util>.
+L<Music::LilyPondUtil> for where the pitch-number to lilypond-note-name code
+has been moved to (or see also L<Music::PitchNum>), and L<App::MusicTools> for
+where the command line utilities have been stashed, e.g. C<atonal-util>.
 
 =back
 
@@ -2063,10 +2063,9 @@ thrig - Jeremy Mates (cpan:JMATES) C<< <jmates at cpan.org> >>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2012-2014 by Jeremy Mates
+Copyright (C) 2012-2015 by Jeremy Mates
 
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.16 or, at
-your option, any later version of Perl 5 you may have available.
+This module is free software; you can redistribute it and/or modify it
+under the Artistic License (2.0).
 
 =cut
