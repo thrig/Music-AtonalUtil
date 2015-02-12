@@ -15,9 +15,9 @@ use warnings;
 use Algorithm::Combinatorics qw/combinations/;
 use Carp qw/croak/;
 use List::Util qw/shuffle/;
-use Scalar::Util qw/looks_like_number/;
+use Scalar::Util qw/looks_like_number refaddr/;
 
-our $VERSION = '1.11';
+our $VERSION = '1.12';
 
 my $DEG_IN_SCALE = 12;
 
@@ -945,21 +945,21 @@ sub multiply {
   # get the iterator value for a ref
   sub geti {
     my ( $self, $ref ) = @_;
-    return $seen{$ref} || 0;
+    return $seen{ refaddr $ref} || 0;
   }
 
   # nexti(\@array) - returns subsequent elements of array on each
   # successive call
   sub nexti {
     my ( $self, $ref ) = @_;
-    $seen{$ref} ||= 0;
-    $ref->[ ++$seen{$ref} % @$ref ];
+    $seen{ refaddr $ref} ||= 0;
+    $ref->[ ++$seen{ refaddr $ref} % @$ref ];
   }
 
   # reseti(\@array) - resets counter
   sub reseti {
     my ( $self, $ref ) = @_;
-    $seen{$ref} = 0;
+    $seen{ refaddr $ref} = 0;
   }
 
   # set the iterator for a ref
@@ -967,14 +967,14 @@ sub multiply {
     my ( $self, $ref, $i ) = @_;
     croak 'iterator must be number'
       unless looks_like_number($i);
-    $seen{$ref} = $i;
+    $seen{ refaddr $ref} = $i;
   }
 
   # returns current element, but does not advance pointer
   sub whati {
     my ( $self, $ref ) = @_;
-    $seen{$ref} ||= 0;
-    $ref->[ $seen{$ref} % @$ref ];
+    $seen{ refaddr $ref} ||= 0;
+    $ref->[ $seen{ refaddr $ref} % @$ref ];
   }
 }
 

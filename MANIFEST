@@ -7,4 +7,5 @@ SIGNATURE
 eg/fortefy
 lib/Music/AtonalUtil.pm
 t/Music-AtonalUtil.t
+t/pod-coverage.t
 t/pod.t
