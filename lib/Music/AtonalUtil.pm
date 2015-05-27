@@ -17,7 +17,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle/;
 use Scalar::Util qw/looks_like_number refaddr/;
 
-our $VERSION = '1.12';
+our $VERSION = '1.14';
 
 my $DEG_IN_SCALE = 12;
 
@@ -496,6 +496,36 @@ sub _apply_melody_rule {
   }
 
   return 1, {};
+}
+
+# Like interval class content (ICC) but instead only calculates adjacent
+# intervals. -- "The Geometry of Musical Rhythm", G.T. Toussaint.
+# (Perhaps more suitable for rhythm as the adjacent intervals there are
+# probably more audible than some harmonic between inner voices.)
+sub adjacent_interval_content {
+  my $self = shift;
+  my $pset = ref $_[0] eq 'ARRAY' ? $_[0] : [@_];
+
+  my %seen;
+  my @nset = sort { $a <=> $b } grep { !$seen{$_}++ } @$pset;
+  croak 'pitch set must contain at least two elements' if @nset < 2;
+
+  my %aic;
+  for my $i ( 1 .. $#nset ) {
+    $aic{ ( $nset[$i] - $nset[ $i - 1 ] ) % $self->{_DEG_IN_SCALE} }++;
+  }
+  # and the wrap-around adjacent interval
+  if ( @nset > 2 ) {
+    $aic{ ( $nset[0] + $self->{_DEG_IN_SCALE} - $nset[-1] )
+        % $self->{_DEG_IN_SCALE} }++;
+  }
+
+  my @aiv;
+  for my $ics ( 1 .. int( $self->{_DEG_IN_SCALE} / 2 ) ) {
+    push @aiv, $aic{$ics} || 0;
+  }
+
+  return wantarray ? ( \@aiv, \%aic ) : \@aiv;
 }
 
 # Utility, converts a scale_degrees-bit number into a pitch set.
@@ -1483,6 +1513,15 @@ methods below via that object. Results from the various methods should
 reside within the B<scale_degrees>, unless the method returns something
 else. Integer math is (often) assumed.
 
+=head2 B<adjacent_interval_content> I<pitch_set>
+
+Like B<interval_class_content>, except only calculates the adjacent
+interval counts for the given pitch set. Return values same as for
+B<interval_class_content> method.
+
+This method may suit rhythmic analysis, see L</"RHYTHM"> for other hints
+in this regard.
+
 =head2 B<bits2pcs> I<number>
 
 Converts a number into a I<pitch_set>, and returns said set as an array
@@ -1888,7 +1927,7 @@ direction of the search.
 Without arguments, returns the number of scale degrees (12 by default).
 If passed a positive integer greater than two, sets the scale degrees to
 that. Note that changing this will change the results from almost all
-the methods this module offers, and has not been tested.
+the methods this module offers, and has not (much) been tested.
 
 =head2 B<set_complex> I<pitch_set>
 
@@ -2021,6 +2060,10 @@ Godfried Toussaint (and other rhythm articles by the same).
 =item *
 
 L<http://en.wikipedia.org/wiki/Forte_number>
+
+=item *
+
+"The Geometry of Musical Rhythm" by Godfried T. Toussaint.
 
 =item *
 

@@ -23,6 +23,44 @@ is( $atu->scale_degrees, 12, 'expect 12 degrees in scale by default' );
 #
 # Atonal Foo
 
+{
+  my $rtu = Music::AtonalUtil->new;
+  $rtu->scale_degrees(16);    # because rhythm
+
+  # Typed up from and compared with graphs in "The Geometry of Musical
+  # Rhythm" p.34, p.37.
+  $deeply->(
+    scalar $rtu->adjacent_interval_content( [ 0, 4, 6, 10, 12 ] ),
+    [ 0, 2, 0, 3, 0, 0, 0, 0 ],
+    'shiko aic'
+  );
+  $deeply->(
+    scalar $rtu->adjacent_interval_content( [ 0, 3, 6, 10, 12 ] ),
+    [ 0, 1, 2, 2, 0, 0, 0, 0 ],
+    'son aic'
+  );
+  $deeply->(
+    scalar $rtu->adjacent_interval_content( [ 0, 3, 7, 10, 12 ] ),
+    [ 0, 1, 2, 2, 0, 0, 0, 0 ],
+    'rumba aic'
+  );
+  $deeply->(
+    scalar $rtu->adjacent_interval_content( [ 0, 3, 6, 10, 11 ] ),
+    [ 1, 0, 2, 1, 1, 0, 0, 0 ],
+    'soukous aic'
+  );
+  $deeply->(
+    scalar $rtu->adjacent_interval_content( [ 0, 3, 6, 10, 14 ] ),
+    [ 0, 1, 2, 2, 0, 0, 0, 0 ],
+    'gahu aic'
+  );
+  $deeply->(
+    scalar $rtu->adjacent_interval_content( [ 0, 3, 6, 10, 13 ] ),
+    [ 0, 0, 4, 1, 0, 0, 0, 0 ],
+    'bossa nova aic'
+  );
+}
+
 $deeply->( $atu->bits2pcs(137), [ 0, 3, 7 ], 'bits to pitch set' );
 
 $deeply->(
@@ -384,4 +422,4 @@ is( $stu->scale_degrees, 17, 'custom number of scale degrees' );
 #my $melody = Music::AtonalUtil->new->gen_melody;
 #diag("melody for this test is: @$melody");
 
-plan tests => 86;
+plan tests => 92;
