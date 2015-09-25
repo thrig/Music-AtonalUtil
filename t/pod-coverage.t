@@ -2,7 +2,7 @@
 use 5.10.0;
 use strict;
 use warnings;
-use Test::More;
+use Test::Most;
 
 # Mandate the POD tests, contrary to the dagolden no-pod-tests fad. I rank
 # documentation on par with the code, not something one can maybe remember to
