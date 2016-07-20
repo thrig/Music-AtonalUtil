@@ -28,20 +28,15 @@ my %params = (
     BUILD_REQUIRES => {},
     TEST_REQUIRES  => {
         'Test::Most' => 0,
-        # Mandate the POD tests, contrary to the dagolden no-pod-tests fad. I rank
-        # documentation on par with the code, not something one can maybe remember
-        # to maybe run the release testing for.
-        'Pod::Coverage'       => 0.18,
-        'Test::Pod::Coverage' => 1.08,
-        'Test::Pod'           => 1.22,
-        'lib'                 => 0,
+        'lib'        => 0,
     },
-    # List everything due to certain linux vendors chopping up core perl, or
-    # otherwise to detect and fail if being installed to a broken perl install.
+    # List everything due to certain linux vendors chopping up core
+    # perl, or otherwise to detect and fail if being installed to a
+    # broken perl install.
     PREREQ_PM => {
         'Algorithm::Combinatorics' => 0,
-        Carp                       => 0,
-        'List::Util'               => 0,
+        'Carp'                     => 0,
+        'List::Util'               => 1.44,    # uniqnum
         'Scalar::Util'             => 0,
     },
 
