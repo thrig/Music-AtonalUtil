@@ -16,7 +16,7 @@ use Carp qw/croak/;
 use List::Util qw/shuffle uniqnum/;
 use Scalar::Util qw/looks_like_number refaddr/;
 
-our $VERSION = '1.15';
+our $VERSION = '1.16';
 
 my $DEG_IN_SCALE = 12;
 
@@ -1010,12 +1010,31 @@ sub multiply {
         return $seen{ refaddr $ref} || 0;
     }
 
+    # grabi(42, \@array) obtains 42 elements from array, looping to
+    # fill if necessary
+    sub grabi {
+        my ( $self, $count, $ref ) = @_;
+        croak 'count must be non-negative integer'
+          if !looks_like_number($count)
+          or $count < 0;
+        return if @$ref == 0 or $count == 0;
+        $seen{ refaddr $ref} ||= 0;
+        my @results;
+        while ( $count > 0 ) {
+            push @results, $ref->[ $seen{ refaddr $ref} ];
+            $seen{ refaddr $ref } = ( $seen{ refaddr $ref } + 1 ) % @$ref;
+            $count--;
+        }
+        return @results;
+    }
+
     # nexti(\@array) - returns subsequent elements of array on each
     # successive call
     sub nexti {
         my ( $self, $ref ) = @_;
         $seen{ refaddr $ref} ||= 0;
-        $ref->[ ++$seen{ refaddr $ref} % @$ref ];
+        $seen{ refaddr $ref } = ( $seen{ refaddr $ref } + 1 ) % @$ref;
+        $ref->[ $seen{ refaddr $ref} ];
     }
 
     # reseti(\@array) - resets counter
@@ -1819,6 +1838,12 @@ documented here:
 Returns current position in array (which may be larger than the number
 of elements in the list, as the routines modulate the iterator down as
 necessary to fit the reference).
+
+=item B<grabi> I<count> I<array ref>
+
+Returns a list of I<count> elements from the array reference, looping
+back over the reference when I<count> is greater than the number of
+elements, or the current pointer requires doing so.
 
 =item B<reseti> I<array ref>
 

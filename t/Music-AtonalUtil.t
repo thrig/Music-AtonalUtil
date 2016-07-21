@@ -384,6 +384,12 @@ ok( $atu->nexti( \@notes ) eq 'b', 'nexti' );
 $atu->seti( \@notes, 4 );
 ok( $atu->nexti( \@notes ) eq 'a', 'nexti' );
 
+# nexti leaves pointer at the element just obtained, so this starts from 'a'
+$deeply->( [ $atu->grabi( 6, \@notes ) ], [qw/a b c f e a/], 'grab six' );
+
+# just to confirm where pointer is...
+$deeply->( [ $atu->grabi( 2, \@notes ) ], [qw/b c/], 'grab two' );
+
 $deeply->( [ $atu->lastn( [qw/a b c/] ) ], [qw/b c/], 'lastn default' );
 $deeply->( [ $atu->lastn( [qw/a b c/], 99 ) ], [qw/a b c/], 'lastn overflow' );
 $atu = Music::AtonalUtil->new( lastn => 3 );
@@ -420,4 +426,4 @@ is( $stu->scale_degrees, 17, 'custom number of scale degrees' );
 #my $melody = Music::AtonalUtil->new->gen_melody;
 #diag("melody for this test is: @$melody");
 
-plan tests => 91;
+plan tests => 93;
