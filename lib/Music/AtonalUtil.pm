@@ -1007,6 +1007,7 @@ sub multiply {
     # get the iterator value for a ref
     sub geti {
         my ( $self, $ref ) = @_;
+        croak 'need an array reference' if !defined $ref or ref $ref ne 'ARRAY';
         return $seen{ refaddr $ref} || 0;
     }
 
@@ -1014,6 +1015,7 @@ sub multiply {
     # fill if necessary
     sub grabi {
         my ( $self, $count, $ref ) = @_;
+        croak 'need an array reference' if !defined $ref or ref $ref ne 'ARRAY';
         croak 'count must be non-negative integer'
           if !looks_like_number($count)
           or $count < 0;
@@ -1032,6 +1034,7 @@ sub multiply {
     # successive call
     sub nexti {
         my ( $self, $ref ) = @_;
+        croak 'need an array reference' if !defined $ref or ref $ref ne 'ARRAY';
         $seen{ refaddr $ref} ||= 0;
         $seen{ refaddr $ref } = ( $seen{ refaddr $ref } + 1 ) % @$ref;
         $ref->[ $seen{ refaddr $ref} ];
@@ -1040,12 +1043,14 @@ sub multiply {
     # reseti(\@array) - resets counter
     sub reseti {
         my ( $self, $ref ) = @_;
+        croak 'need an array reference' if !defined $ref or ref $ref ne 'ARRAY';
         $seen{ refaddr $ref} = 0;
     }
 
     # set the iterator for a ref
     sub seti {
         my ( $self, $ref, $i ) = @_;
+        croak 'need an array reference' if !defined $ref or ref $ref ne 'ARRAY';
         croak 'iterator must be number'
           unless looks_like_number($i);
         $seen{ refaddr $ref} = $i;
@@ -1054,6 +1059,7 @@ sub multiply {
     # returns current element, but does not advance pointer
     sub whati {
         my ( $self, $ref ) = @_;
+        croak 'need an array reference' if !defined $ref or ref $ref ne 'ARRAY';
         $seen{ refaddr $ref} ||= 0;
         $ref->[ $seen{ refaddr $ref} % @$ref ];
     }
